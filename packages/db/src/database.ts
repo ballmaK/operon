@@ -1,16 +1,25 @@
 import Database from 'better-sqlite3';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { mkdirSync } from 'node:fs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-
-const MIGRATION_SQL = readFileSync(join(__dirname, 'migrations', '001_initial.sql'), 'utf-8');
+const MIGRATIONS_DIR = join(__dirname, 'migrations');
 
 export interface DatabaseOptions {
   dataDir: string;
   filename?: string;
+}
+
+function runMigrations(db: Database.Database): void {
+  const files = readdirSync(MIGRATIONS_DIR)
+    .filter((f) => f.endsWith('.sql'))
+    .sort();
+  for (const file of files) {
+    const sql = readFileSync(join(MIGRATIONS_DIR, file), 'utf-8');
+    db.exec(sql);
+  }
 }
 
 export function openDatabase(options: DatabaseOptions): Database.Database {
@@ -18,7 +27,7 @@ export function openDatabase(options: DatabaseOptions): Database.Database {
   const dbPath = join(options.dataDir, options.filename ?? 'operon.db');
   const db = new Database(dbPath);
   db.pragma('journal_mode = WAL');
-  db.exec(MIGRATION_SQL);
+  runMigrations(db);
   return db;
 }
 

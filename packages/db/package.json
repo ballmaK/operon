@@ -12,7 +12,7 @@
     }
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && node -e \"require('fs').cpSync('src/migrations','dist/migrations',{recursive:true})\"",
     "test": "vitest run"
   },
   "dependencies": {

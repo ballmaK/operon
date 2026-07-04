@@ -14,9 +14,9 @@
 - [x] M12: System tray — show/hide/quit menu (ref: docs/prd/modules/M12-platform-shell.md P-M12-02)
 - [x] M12: Docker Desktop env check — fail blocks Sidecar start (ref: M12 PL-02a, C02)
 - [x] M12: Platform DATA_DIR / LOG_DIR / TEMP_DIR resolution (ref: docs/prd/modules/M12-platform-shell.md)
-- [ ] M16: ApiCredential encrypted store + GET/PUT /api/v1/credentials (ref: docs/prd/modules/M16-auth-approval.md)
-- [ ] M16: Approval entity + list/approve/reject API (ref: docs/prd/modules/M16-auth-approval.md)
-- [ ] M16: Default Owner user seed on first run (ref: docs/prd/modules/M16-auth-approval.md)
+- [x] M16: ApiCredential encrypted store + GET/PUT /api/v1/credentials (ref: docs/prd/modules/M16-auth-approval.md)
+- [x] M16: Approval entity + list/approve/reject API (ref: docs/prd/modules/M16-auth-approval.md)
+- [x] M16: Default Owner user seed on first run (ref: docs/prd/modules/M16-auth-approval.md)
 
 ## Phase 1 — Core Loop (M11 → M10 → M07 → M06 → M05)
 

@@ -57,3 +57,47 @@ export interface TranscriptEntry {
 
 export const SIDECAR_DEFAULT_PORT = 3721;
 export const OPERON_VERSION = '0.1.0';
+
+/** Local Owner — M16 */
+export interface User {
+  id: string;
+  displayName: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** API Key (masked for API responses) — M16 */
+export interface ApiCredentialView {
+  id: string;
+  provider: string;
+  maskedKey: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpsertCredentialRequest {
+  provider: string;
+  apiKey: string;
+}
+
+/** Owner approval gate — M16 */
+export type ApprovalStatus = 'pending' | 'approved' | 'rejected' | 'expired';
+export type ApprovalActionType = 'skill_invoke' | 'spend' | 'deploy' | 'email';
+
+export interface Approval {
+  id: string;
+  actionType: ApprovalActionType;
+  taskId: string | null;
+  summary: string;
+  status: ApprovalStatus;
+  expiresAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateApprovalRequest {
+  actionType: ApprovalActionType;
+  taskId?: string | null;
+  summary: string;
+  expiresAt?: string;
+}
