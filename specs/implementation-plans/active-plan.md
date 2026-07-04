@@ -43,7 +43,7 @@
 
 ## Phase 3 — Collaboration & Rhythm (M08 → M04)
 
-- [ ] M08: Handoff create + accept flow (ref: docs/prd/modules/M08-handoff.md)
-- [ ] M08: Cross-Lead handoff notification in department UI (ref: docs/prd/modules/M08-handoff.md)
-- [ ] M04: Daily/weekly rhythm scheduler (ref: docs/prd/modules/M04-rhythm.md)
-- [ ] M04: Rhythm report + blockers summary UI (ref: docs/prd/modules/M04-rhythm.md)
+- [x] M08: Handoff create + accept flow (ref: docs/prd/modules/M08-handoff.md)
+- [x] M08: Cross-Lead handoff notification in department UI (ref: docs/prd/modules/M08-handoff.md)
+- [x] M04: Daily/weekly rhythm scheduler (ref: docs/prd/modules/M04-rhythm.md)
+- [x] M04: Rhythm report + blockers summary UI (ref: docs/prd/modules/M04-rhythm.md)

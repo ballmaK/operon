@@ -18,6 +18,11 @@ import {
   WorkerRunRepo,
   listAssetsForCompany,
   listProofsForCompany,
+  HandoffRepo,
+  BlockerRepo,
+  RhythmScheduleRepo,
+  RhythmReportRepo,
+  RhythmService,
 } from '@operon/db';
 import { OPERON_VERSION, type HealthResponse } from '@operon/shared-types';
 import { mkdtempSync } from 'node:fs';
@@ -36,6 +41,9 @@ import { companiesRouter } from './routes/companies.js';
 import { objectivesRouter } from './routes/objectives.js';
 import { tasksRouter } from './routes/tasks.js';
 import { proofsRouter } from './routes/proofs.js';
+import { handoffsRouter } from './routes/handoffs.js';
+import { rhythmRouter } from './routes/rhythm.js';
+import { shouldRunDailyReview } from '@operon/db';
 
 export interface SidecarOptions {
   dataDir?: string;
@@ -68,9 +76,37 @@ export function createApp(options: SidecarOptions = {}): Express {
   const objectives = new ObjectiveRepo(db);
   const tasks = new TaskRepo(db);
   const workerRuns = new WorkerRunRepo(db);
+  const handoffs = new HandoffRepo(db);
+  const blockers = new BlockerRepo(db);
+  const rhythmSchedules = new RhythmScheduleRepo(db);
+  const rhythmReports = new RhythmReportRepo(db);
+  const rhythmService = new RhythmService(
+    db,
+    rhythmSchedules,
+    rhythmReports,
+    blockers,
+    objectives,
+    departments,
+    handoffs,
+    approvals,
+    transcripts,
+  );
 
   app.locals.db = db;
   app.locals.sidecar = { dataDir, ownerId } satisfies SidecarContext;
+
+  app.locals.rhythmTimer = setInterval(() => {
+    for (const co of companies.list().filter((c) => c.status === 'active')) {
+      const schedule = rhythmSchedules.get(co.id);
+      if (shouldRunDailyReview(schedule)) {
+        try {
+          rhythmService.generateReport(co.id, 'daily');
+        } catch {
+          /* MVP: ignore scheduler errors */
+        }
+      }
+    }
+  }, 60_000);
 
   app.get('/health', (_req, res) => {
     const body: HealthResponse = {
@@ -110,6 +146,16 @@ export function createApp(options: SidecarOptions = {}): Express {
     transcripts,
     dataDir,
   }));
+  app.use('/api/v1', handoffsRouter({ handoffs, departments, transcripts }));
+  app.use(
+    '/api/v1',
+    rhythmRouter({
+      schedules: rhythmSchedules,
+      reports: rhythmReports,
+      blockers,
+      rhythm: rhythmService,
+    }),
+  );
   app.use('/api/v1/approvals', approvalsRouter(approvals, transcripts));
   app.use('/api/v1/model-configs', modelConfigsRouter(modelConfigs));
   app.use('/api/v1/skills', skillsRouter());
@@ -123,6 +169,9 @@ export function createApp(options: SidecarOptions = {}): Express {
 }
 
 export function closeSidecarApp(app: Express): void {
+  const timer = app.locals.rhythmTimer as ReturnType<typeof setInterval> | undefined;
+  if (timer) clearInterval(timer);
+
   const db = app.locals.db as { close?: () => void } | undefined;
   if (db && typeof db.close === 'function') {
     closeDatabase(db as Parameters<typeof closeDatabase>[0]);

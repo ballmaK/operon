@@ -343,3 +343,61 @@ describe('M02/M03 tasks proofs transcripts API', () => {
     expect(correction.status).toBe(201);
   });
 });
+
+describe('M08/M04 handoffs and rhythm API', () => {
+  let dataDir: string;
+  let app: ReturnType<typeof createApp>;
+
+  afterEach(() => {
+    if (app) closeSidecarApp(app);
+    if (dataDir) rmSync(dataDir, { recursive: true, force: true });
+  });
+
+  it('handoff create accept reply and rhythm trigger', async () => {
+    dataDir = mkdtempSync(join(tmpdir(), 'operon-sidecar-'));
+    app = createApp({ dataDir });
+
+    const db = app.locals.db as Parameters<typeof seedTestFixture>[0];
+    const fx = seedTestFixture(db, dataDir);
+
+    const mkt = await request(app)
+      .post(`/api/v1/companies/${fx.companyId}/departments`)
+      .send({ name: 'Marketing' });
+
+    const created = await request(app)
+      .post('/api/v1/handoffs')
+      .send({
+        companyId: fx.companyId,
+        fromDepartmentId: fx.departmentId,
+        toDepartmentId: mkt.body.id,
+        contextSummary: 'Build artifacts ready for launch',
+        request: 'Draft release notes',
+        expectedProofType: 'file',
+      });
+    expect(created.status).toBe(201);
+
+    const pending = await request(app).get(
+      `/api/v1/departments/${mkt.body.id}/handoffs/pending-count`,
+    );
+    expect(pending.body.count).toBe(1);
+
+    const accepted = await request(app).post(`/api/v1/handoffs/${created.body.id}/accept`);
+    expect(accepted.body.status).toBe('accepted');
+
+    const replied = await request(app)
+      .post(`/api/v1/handoffs/${created.body.id}/reply`)
+      .send({ replySummary: 'Release notes published to docs' });
+    expect(replied.body.status).toBe('replied');
+
+    const schedule = await request(app).get(
+      `/api/v1/rhythm/schedule?companyId=${fx.companyId}`,
+    );
+    expect(schedule.body.dailyTime).toBe('09:00');
+
+    const report = await request(app)
+      .post('/api/v1/rhythm/trigger')
+      .send({ companyId: fx.companyId, reportType: 'daily' });
+    expect(report.status).toBe(201);
+    expect(report.body.reportType).toBe('daily');
+  });
+});

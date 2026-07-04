@@ -9,6 +9,11 @@ import type {
   WorkerRun,
   ProofWallItem,
   AssetItem,
+  Handoff,
+  CreateHandoffRequest,
+  Blocker,
+  RhythmSchedule,
+  RhythmReport,
 } from '@operon/shared-types';
 import { SIDECAR_DEFAULT_PORT } from '@operon/shared-types';
 
@@ -248,4 +253,93 @@ export async function runCompanyWizard(
   }
 
   return { company, department, objective, loop };
+}
+
+export async function createHandoff(port: number, input: CreateHandoffRequest): Promise<Handoff> {
+  return requestJson<Handoff>(port, '/api/v1/handoffs', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export async function listHandoffInbox(port: number, departmentId: string): Promise<Handoff[]> {
+  return requestJson<Handoff[]>(port, `/api/v1/departments/${departmentId}/handoffs/inbox`);
+}
+
+export async function getHandoffPendingCount(port: number, departmentId: string): Promise<number> {
+  const res = await requestJson<{ count: number }>(
+    port,
+    `/api/v1/departments/${departmentId}/handoffs/pending-count`,
+  );
+  return res.count;
+}
+
+export async function acceptHandoff(port: number, handoffId: string): Promise<Handoff> {
+  return requestJson<Handoff>(port, `/api/v1/handoffs/${handoffId}/accept`, {
+    method: 'POST',
+    body: '{}',
+  });
+}
+
+export async function rejectHandoff(port: number, handoffId: string): Promise<Handoff> {
+  return requestJson<Handoff>(port, `/api/v1/handoffs/${handoffId}/reject`, {
+    method: 'POST',
+    body: '{}',
+  });
+}
+
+export async function replyHandoff(port: number, handoffId: string, replySummary: string): Promise<Handoff> {
+  return requestJson<Handoff>(port, `/api/v1/handoffs/${handoffId}/reply`, {
+    method: 'POST',
+    body: JSON.stringify({ replySummary }),
+  });
+}
+
+export async function getRhythmSchedule(port: number, companyId: string): Promise<RhythmSchedule> {
+  return requestJson<RhythmSchedule>(port, `/api/v1/rhythm/schedule?companyId=${companyId}`);
+}
+
+export async function updateRhythmSchedule(
+  port: number,
+  input: Partial<RhythmSchedule> & { companyId: string },
+): Promise<RhythmSchedule> {
+  return requestJson<RhythmSchedule>(port, '/api/v1/rhythm/schedule', {
+    method: 'PUT',
+    body: JSON.stringify(input),
+  });
+}
+
+export async function listRhythmReports(port: number, companyId: string): Promise<RhythmReport[]> {
+  return requestJson<RhythmReport[]>(port, `/api/v1/rhythm/reports?companyId=${companyId}`);
+}
+
+export async function getLatestRhythmReport(
+  port: number,
+  companyId: string,
+  type?: 'daily' | 'weekly',
+): Promise<RhythmReport> {
+  const qs = type ? `&type=${type}` : '';
+  return requestJson<RhythmReport>(port, `/api/v1/rhythm/reports/latest?companyId=${companyId}${qs}`);
+}
+
+export async function triggerRhythmReport(
+  port: number,
+  companyId: string,
+  reportType: 'daily' | 'weekly' = 'daily',
+): Promise<RhythmReport> {
+  return requestJson<RhythmReport>(port, '/api/v1/rhythm/trigger', {
+    method: 'POST',
+    body: JSON.stringify({ companyId, reportType }),
+  });
+}
+
+export async function listBlockers(port: number, companyId: string): Promise<Blocker[]> {
+  return requestJson<Blocker[]>(port, `/api/v1/blockers?companyId=${companyId}`);
+}
+
+export async function resolveBlocker(port: number, blockerId: string): Promise<Blocker> {
+  return requestJson<Blocker>(port, `/api/v1/blockers/${blockerId}/resolve`, {
+    method: 'POST',
+    body: '{}',
+  });
 }

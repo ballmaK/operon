@@ -7,6 +7,8 @@ import { WorkerExecutionPanel } from './WorkerExecutionPanel';
 import { TranscriptTimeline } from './TranscriptTimeline';
 import { ProofWall } from './ProofWall';
 import { AssetLibrary } from './AssetLibrary';
+import { HandoffPanel, fetchDeptHandoffCounts } from './HandoffPanel';
+import { RhythmCenter } from './RhythmCenter';
 import {
   completeObjective,
   createObjective,
@@ -19,7 +21,7 @@ import {
   updateObjective,
 } from '../lib/sidecar-api';
 
-type MainView = 'room' | 'tasks' | 'transcripts' | 'proofs' | 'assets';
+type MainView = 'room' | 'tasks' | 'handoffs' | 'rhythm' | 'transcripts' | 'proofs' | 'assets';
 
 interface ControlRoomProps {
   port: number;
@@ -47,6 +49,12 @@ export function ControlRoom({
   const [newTitle, setNewTitle] = useState('');
   const [newConstraints, setNewConstraints] = useState('');
   const [loopMap, setLoopMap] = useState<Record<string, Awaited<ReturnType<typeof getObjective>>['controlLoop']>>({});
+  const [handoffCounts, setHandoffCounts] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (!port || data.departments.length === 0) return;
+    void fetchDeptHandoffCounts(port, data.departments).then(setHandoffCounts);
+  }, [port, data.departments, view]);
 
   useEffect(() => {
     if (data.departments.length > 0 && !selectedDeptId) {
@@ -121,6 +129,8 @@ export function ControlRoom({
   const tabs: { id: MainView; label: string }[] = [
     { id: 'room', label: '控制室' },
     { id: 'tasks', label: '任务' },
+    { id: 'handoffs', label: '交接' },
+    { id: 'rhythm', label: '运营节奏' },
     { id: 'transcripts', label: '转录' },
     { id: 'proofs', label: '证明墙' },
     { id: 'assets', label: '资产库' },
@@ -185,6 +195,9 @@ export function ControlRoom({
                         <span>{d.name}</span>
                         {d.activeTaskCount > 0 ? (
                           <span className="dept-badge">{d.activeTaskCount}</span>
+                        ) : null}
+                        {(handoffCounts[d.id] ?? 0) > 0 ? (
+                          <span className="handoff-badge">{handoffCounts[d.id]}</span>
                         ) : null}
                       </button>
                     </li>
@@ -303,6 +316,9 @@ export function ControlRoom({
                     {d.activeTaskCount > 0 ? (
                       <span className="dept-badge">{d.activeTaskCount}</span>
                     ) : null}
+                    {(handoffCounts[d.id] ?? 0) > 0 ? (
+                      <span className="handoff-badge">{handoffCounts[d.id]}</span>
+                    ) : null}
                   </button>
                 </li>
               ))}
@@ -319,6 +335,24 @@ export function ControlRoom({
             </section>
             <WorkerExecutionPanel port={port} task={selectedTask} />
           </main>
+        </div>
+      ) : null}
+
+      {view === 'handoffs' ? (
+        <div className="control-room-main padded">
+          <HandoffPanel
+            port={port}
+            companyId={company.id}
+            departments={data.departments}
+            selectedDepartmentId={selectedDeptId}
+            onPendingChange={() => void fetchDeptHandoffCounts(port, data.departments).then(setHandoffCounts)}
+          />
+        </div>
+      ) : null}
+
+      {view === 'rhythm' ? (
+        <div className="control-room-main padded">
+          <RhythmCenter port={port} companyId={company.id} />
         </div>
       ) : null}
 
