@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+target/
+
+# Ralph
+.ralph-logs/
+.ralph-stop
+.scratch/
+
+# Tauri / build
+dist/
+apps/desktop/src-tauri/target/
+
+# Local env
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+*.swp

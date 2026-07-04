@@ -1,0 +1,23 @@
+# Ralph Security Sign-Off — Operon
+
+## Environment
+- Type: local (Windows 10/11)
+- Machine: developer workstation
+
+## Credentials Present
+- LLM API keys (user-provided, encrypted in M16)
+- Docker Desktop (local)
+
+## Blast Radius
+If agent is compromised or makes mistakes:
+- API keys in local config could be exposed
+- Docker containers could affect local filesystem within sandbox paths
+- No production deployment in MVP
+
+## Sign-Off
+- [x] I understand the risks
+- [x] Blast radius is acceptable for local development
+- [x] Docker is required (C02)
+
+Signed: project owner
+Date: 2026-07-04
