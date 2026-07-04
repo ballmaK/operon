@@ -82,3 +82,72 @@ describe('M16 owner seed', () => {
     rmSync(dataDir, { recursive: true, force: true });
   });
 });
+
+describe('Phase 1 M11/M10 APIs', () => {
+  let dataDir: string;
+  let app: ReturnType<typeof createApp>;
+
+  afterEach(() => {
+    if (app) closeSidecarApp(app);
+    if (dataDir) rmSync(dataDir, { recursive: true, force: true });
+  });
+
+  it('GET /api/v1/model-configs returns seeded roles', async () => {
+    dataDir = mkdtempSync(join(tmpdir(), 'operon-sidecar-'));
+    app = createApp({ dataDir });
+    const res = await request(app).get('/api/v1/model-configs');
+    expect(res.body).toHaveLength(5);
+    expect(res.body.find((c: { role: string }) => c.role === 'lead_plan')).toBeTruthy();
+  });
+
+  it('POST /internal/llm/complete returns stub after credential set', async () => {
+    dataDir = mkdtempSync(join(tmpdir(), 'operon-sidecar-'));
+    app = createApp({ dataDir });
+    await request(app)
+      .put('/api/v1/credentials')
+      .send({ provider: 'openai', apiKey: 'sk-abcdef1234567890' });
+
+    const res = await request(app)
+      .post('/internal/llm/complete')
+      .send({
+        role: 'worker_default',
+        agentRunId: 'run-1',
+        messages: [{ role: 'user', content: 'ping' }],
+      });
+    expect(res.status).toBe(200);
+    expect(res.body.stub).toBe(true);
+    expect(res.body.content).toContain('ping');
+  });
+
+  it('GET /api/v1/skills lists MVP skills', async () => {
+    dataDir = mkdtempSync(join(tmpdir(), 'operon-sidecar-'));
+    app = createApp({ dataDir });
+    const res = await request(app).get('/api/v1/skills');
+    expect(res.body).toHaveLength(6);
+  });
+
+  it('sandbox session create, file_write invoke, destroy', async () => {
+    dataDir = mkdtempSync(join(tmpdir(), 'operon-sidecar-'));
+    app = createApp({ dataDir });
+
+    const session = await request(app)
+      .post('/internal/sandbox/sessions')
+      .send({ runtimeType: 'subprocess', agentRunId: 'run-x' });
+    expect(session.status).toBe(201);
+    const sessionId = session.body.id as string;
+
+    const invoke = await request(app)
+      .post('/internal/sandbox/invoke')
+      .send({
+        sessionId,
+        skillCode: 'file_write',
+        agentRunId: 'run-x',
+        params: { relativePath: 'out.txt', content: 'hello sandbox' },
+      });
+    expect(invoke.status).toBe(200);
+    expect(invoke.body.writtenPath).toBe('out.txt');
+
+    const del = await request(app).delete(`/internal/sandbox/sessions/${sessionId}`);
+    expect(del.status).toBe(204);
+  });
+});

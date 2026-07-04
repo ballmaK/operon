@@ -1,5 +1,6 @@
 import type Database from 'better-sqlite3';
 import { seedDefaultOwner } from './repos/user-repo.js';
+import { seedDefaultModelConfigs } from './repos/model-config-repo.js';
 
 export const AUDIT_COMPANY_ID = '00000000-0000-0000-0000-000000000000';
 
@@ -15,6 +16,7 @@ export function seedAuditCompany(db: Database.Database): void {
 
 export function bootstrapAuth(db: Database.Database): { ownerId: string } {
   seedAuditCompany(db);
+  seedDefaultModelConfigs(db);
   const owner = seedDefaultOwner(db);
   return { ownerId: owner.id };
 }

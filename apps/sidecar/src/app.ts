@@ -6,6 +6,9 @@ import {
   ApprovalRepo,
   TranscriptRepo,
   UserRepo,
+  ModelConfigRepo,
+  ModelRouter,
+  SandboxManager,
   bootstrapAuth,
 } from '@operon/db';
 import { OPERON_VERSION, type HealthResponse } from '@operon/shared-types';
@@ -14,6 +17,10 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { credentialsRouter } from './routes/credentials.js';
 import { approvalsRouter } from './routes/approvals.js';
+import { modelConfigsRouter } from './routes/model-configs.js';
+import { llmRouter } from './routes/llm.js';
+import { skillsRouter } from './routes/skills.js';
+import { sandboxRouter } from './routes/sandbox.js';
 
 export interface SidecarOptions {
   dataDir?: string;
@@ -37,6 +44,9 @@ export function createApp(options: SidecarOptions = {}): Express {
   const approvals = new ApprovalRepo(db);
   const transcripts = new TranscriptRepo(db);
   const users = new UserRepo(db);
+  const modelConfigs = new ModelConfigRepo(db);
+  const modelRouter = new ModelRouter(modelConfigs, credentials);
+  const sandbox = new SandboxManager(dataDir);
 
   app.locals.db = db;
   app.locals.sidecar = { dataDir, ownerId } satisfies SidecarContext;
@@ -55,6 +65,10 @@ export function createApp(options: SidecarOptions = {}): Express {
 
   app.use('/api/v1/credentials', credentialsRouter(credentials));
   app.use('/api/v1/approvals', approvalsRouter(approvals, transcripts));
+  app.use('/api/v1/model-configs', modelConfigsRouter(modelConfigs));
+  app.use('/api/v1/skills', skillsRouter());
+  app.use('/internal/llm', llmRouter(modelRouter));
+  app.use('/internal/sandbox', sandboxRouter(sandbox));
 
   return app;
 }

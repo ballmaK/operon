@@ -29,6 +29,7 @@ describe('M09 SQLite schema', () => {
       'approvals',
       'companies',
       'departments',
+      'model_configs',
       'objectives',
       'transcripts',
       'users',

@@ -20,11 +20,11 @@
 
 ## Phase 1 — Core Loop (M11 → M10 → M07 → M06 → M05)
 
-- [ ] M11: ModelConfig table + default routing strategy (ref: docs/prd/modules/M11-model-router.md)
-- [ ] M11: POST /internal/llm/complete stub with role-based model pick (ref: docs/prd/modules/M11-model-router.md)
-- [ ] M10: Skill registry — MVP skills list GET /api/v1/skills (ref: docs/prd/modules/M10-runtime-sandbox.md)
-- [ ] M10: SandboxSession create/destroy lifecycle (ref: docs/prd/modules/M10-runtime-sandbox.md)
-- [ ] M10: file_write skill via subprocess in company sandbox dir (ref: docs/prd/modules/M10-runtime-sandbox.md)
+- [x] M11: ModelConfig table + default routing strategy (ref: docs/prd/modules/M11-model-router.md)
+- [x] M11: POST /internal/llm/complete stub with role-based model pick (ref: docs/prd/modules/M11-model-router.md)
+- [x] M10: Skill registry — MVP skills list GET /api/v1/skills (ref: docs/prd/modules/M10-runtime-sandbox.md)
+- [x] M10: SandboxSession create/destroy lifecycle (ref: docs/prd/modules/M10-runtime-sandbox.md)
+- [x] M10: file_write skill via subprocess in company sandbox dir (ref: docs/prd/modules/M10-runtime-sandbox.md)
 - [ ] M07: WorkerAgent spawn with narrow brief + minimalMemory validation (ref: docs/prd/modules/M07-worker-agent.md)
 - [ ] M07: Worker ReAct loop stub — invoke skill → submit Proof (ref: docs/prd/modules/M07-worker-agent.md)
 - [ ] M06: Lead plan — decompose Objective into Task list (ref: docs/prd/modules/M06-lead-agent.md)
