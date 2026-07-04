@@ -1,4 +1,11 @@
-import type { Company, Department, Objective, ControlLoop } from '@operon/shared-types';
+import type {
+  Company,
+  Department,
+  Objective,
+  ControlLoop,
+  TranscriptEntry,
+  Approval,
+} from '@operon/shared-types';
 import { SIDECAR_DEFAULT_PORT } from '@operon/shared-types';
 
 export function sidecarBaseUrl(port = SIDECAR_DEFAULT_PORT): string {
@@ -40,6 +47,91 @@ export async function createDepartment(
   return requestJson<Department>(port, `/api/v1/companies/${companyId}/departments`, {
     method: 'POST',
     body: JSON.stringify({ name }),
+  });
+}
+
+export async function listDepartments(port: number, companyId: string): Promise<Department[]> {
+  return requestJson<Department[]>(port, `/api/v1/companies/${companyId}/departments`);
+}
+
+export async function listObjectives(port: number, companyId: string): Promise<Objective[]> {
+  return requestJson<Objective[]>(port, `/api/v1/companies/${companyId}/objectives`);
+}
+
+export async function listTranscripts(
+  port: number,
+  companyId: string,
+  limit = 5,
+): Promise<TranscriptEntry[]> {
+  return requestJson<TranscriptEntry[]>(
+    port,
+    `/api/v1/companies/${companyId}/transcripts?limit=${limit}`,
+  );
+}
+
+export async function listPendingApprovals(port: number): Promise<Approval[]> {
+  const all = await requestJson<Approval[]>(port, '/api/v1/approvals');
+  return all.filter((a) => a.status === 'pending');
+}
+
+export async function getObjective(
+  port: number,
+  objectiveId: string,
+): Promise<Objective & { controlLoop: ControlLoop | null }> {
+  return requestJson(port, `/api/v1/objectives/${objectiveId}`);
+}
+
+export async function updateObjective(
+  port: number,
+  objectiveId: string,
+  input: { title?: string; constraints?: string; priority?: string },
+): Promise<Objective> {
+  return requestJson<Objective>(port, `/api/v1/objectives/${objectiveId}`, {
+    method: 'PUT',
+    body: JSON.stringify(input),
+  });
+}
+
+export async function startObjective(
+  port: number,
+  objectiveId: string,
+  departmentId?: string,
+): Promise<{ objective: Objective | null; loop: ControlLoop }> {
+  return requestJson(port, `/api/v1/objectives/${objectiveId}/start`, {
+    method: 'POST',
+    body: JSON.stringify(departmentId ? { departmentId } : {}),
+  });
+}
+
+export async function pauseObjective(port: number, objectiveId: string): Promise<Objective> {
+  return requestJson<Objective>(port, `/api/v1/objectives/${objectiveId}/pause`, {
+    method: 'POST',
+    body: '{}',
+  });
+}
+
+export async function resumeObjective(port: number, objectiveId: string): Promise<Objective> {
+  return requestJson<Objective>(port, `/api/v1/objectives/${objectiveId}/resume`, {
+    method: 'POST',
+    body: '{}',
+  });
+}
+
+export async function completeObjective(port: number, objectiveId: string): Promise<Objective> {
+  return requestJson<Objective>(port, `/api/v1/objectives/${objectiveId}/complete`, {
+    method: 'POST',
+    body: '{}',
+  });
+}
+
+export async function sendObjectiveMessage(
+  port: number,
+  objectiveId: string,
+  message: string,
+): Promise<TranscriptEntry> {
+  return requestJson<TranscriptEntry>(port, `/api/v1/objectives/${objectiveId}/messages`, {
+    method: 'POST',
+    body: JSON.stringify({ message }),
   });
 }
 

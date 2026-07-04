@@ -29,6 +29,7 @@ import { workersRouter } from './routes/workers.js';
 import { leadsRouter } from './routes/leads.js';
 import { controlLoopsRouter } from './routes/control-loops.js';
 import { companiesRouter } from './routes/companies.js';
+import { objectivesRouter } from './routes/objectives.js';
 
 export interface SidecarOptions {
   dataDir?: string;
@@ -77,6 +78,15 @@ export function createApp(options: SidecarOptions = {}): Express {
 
   app.use('/api/v1/credentials', credentialsRouter(credentials));
   app.use('/api/v1', companiesRouter({ companies, departments, objectives, transcripts, dataDir }));
+  app.use(
+    '/api/v1',
+    objectivesRouter({
+      objectives,
+      departments,
+      controlLoop: services.controlLoop,
+      transcripts,
+    }),
+  );
   app.use('/api/v1/approvals', approvalsRouter(approvals, transcripts));
   app.use('/api/v1/model-configs', modelConfigsRouter(modelConfigs));
   app.use('/api/v1/skills', skillsRouter());

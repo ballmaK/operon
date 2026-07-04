@@ -239,3 +239,52 @@ describe('M01 companies API', () => {
     expect(obj.body.error).toMatch(/CO-01/);
   });
 });
+
+describe('M01 objectives CRUD API', () => {
+  let dataDir: string;
+  let app: ReturnType<typeof createApp>;
+
+  afterEach(() => {
+    if (app) closeSidecarApp(app);
+    if (dataDir) rmSync(dataDir, { recursive: true, force: true });
+  });
+
+  it('lists, updates, and transitions objective status', async () => {
+    dataDir = mkdtempSync(join(tmpdir(), 'operon-sidecar-'));
+    app = createApp({ dataDir });
+
+    const company = await request(app).post('/api/v1/companies').send({ name: 'Obj Co' });
+    const dept = await request(app)
+      .post(`/api/v1/companies/${company.body.id}/departments`)
+      .send({ name: 'Product' });
+    const created = await request(app)
+      .post(`/api/v1/companies/${company.body.id}/objectives`)
+      .send({ title: 'Grow revenue 20 percent' });
+
+    const list = await request(app).get(`/api/v1/companies/${company.body.id}/objectives`);
+    expect(list.body).toHaveLength(1);
+
+    const updated = await request(app)
+      .put(`/api/v1/objectives/${created.body.id}`)
+      .send({ title: 'Grow revenue 25 percent', constraints: 'Q3 only' });
+    expect(updated.body.title).toContain('25 percent');
+
+    const pausedFail = await request(app).post(`/api/v1/objectives/${created.body.id}/pause`);
+    expect(pausedFail.status).toBe(400);
+
+    const db = app.locals.db as Parameters<typeof seedTestFixture>[0];
+    seedTestFixture(db, dataDir);
+
+    const msg = await request(app)
+      .post(`/api/v1/objectives/${created.body.id}/messages`)
+      .send({ message: 'Focus on enterprise leads' });
+    expect(msg.status).toBe(201);
+
+    const transcripts = await request(app).get(
+      `/api/v1/companies/${company.body.id}/transcripts?limit=3`,
+    );
+    expect(transcripts.body.length).toBeGreaterThan(0);
+
+    expect(dept.body.name).toBe('Product');
+  });
+});

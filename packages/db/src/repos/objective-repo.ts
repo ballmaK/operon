@@ -56,9 +56,35 @@ export class ObjectiveRepo {
   }
 
   setActive(id: string): void {
+    this.setStatus(id, 'active');
+  }
+
+  setStatus(id: string, status: Objective['status']): Objective | null {
     const now = new Date().toISOString();
     this.db
-      .prepare(`UPDATE objectives SET status = 'active', updated_at = ? WHERE id = ?`)
-      .run(now, id);
+      .prepare(`UPDATE objectives SET status = ?, updated_at = ? WHERE id = ?`)
+      .run(status, now, id);
+    return this.findById(id);
+  }
+
+  update(
+    id: string,
+    input: { title?: string; constraints?: string | null; priority?: 'P0' | 'P1' | 'P2' | null },
+  ): Objective | null {
+    const existing = this.findById(id);
+    if (!existing) return null;
+
+    const title = input.title ?? existing.title;
+    const constraints =
+      input.constraints !== undefined ? input.constraints : existing.constraints;
+    const priority = input.priority !== undefined ? input.priority : existing.priority;
+    const now = new Date().toISOString();
+
+    this.db
+      .prepare(
+        `UPDATE objectives SET title = ?, constraints = ?, priority = ?, updated_at = ? WHERE id = ?`,
+      )
+      .run(title, constraints, priority, now, id);
+    return this.findById(id);
   }
 }

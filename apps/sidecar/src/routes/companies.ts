@@ -106,5 +106,33 @@ export function companiesRouter(deps: CompaniesRouterDeps): Router {
     }
   });
 
+  router.get('/companies/:id/objectives', (req: Request, res: Response) => {
+    const company = deps.companies.findById(String(req.params.id));
+    if (!company) {
+      res.status(404).json({ error: 'Company not found' });
+      return;
+    }
+    res.json(deps.objectives.listByCompany(company.id));
+  });
+
+  router.get('/companies/:id/departments', (req: Request, res: Response) => {
+    const company = deps.companies.findById(String(req.params.id));
+    if (!company) {
+      res.status(404).json({ error: 'Company not found' });
+      return;
+    }
+    res.json(deps.departments.listByCompany(company.id));
+  });
+
+  router.get('/companies/:id/transcripts', (req: Request, res: Response) => {
+    const company = deps.companies.findById(String(req.params.id));
+    if (!company) {
+      res.status(404).json({ error: 'Company not found' });
+      return;
+    }
+    const limit = Math.min(Number(req.query.limit) || 5, 50);
+    res.json(deps.transcripts.query(company.id, limit));
+  });
+
   return router;
 }

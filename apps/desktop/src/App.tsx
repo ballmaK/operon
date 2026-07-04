@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { OPERON_VERSION } from '@operon/shared-types';
 import { useSidecarStatus } from './hooks/useSidecarStatus';
 import { useCompanies } from './hooks/useCompanies';
 import { CompanyWizard } from './components/CompanyWizard';
+import { ControlRoom } from './components/ControlRoom';
 
 export default function App() {
   const { sidecar, environment, paths, isTauri, retry, sidecarStatusLabel } =
@@ -13,6 +14,13 @@ export default function App() {
     sidecarRunning,
   );
   const [showWizard, setShowWizard] = useState(false);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
+
+  useEffect(() => {
+    if (companies.length > 0 && !selectedCompanyId) {
+      setSelectedCompanyId(companies[0].id);
+    }
+  }, [companies, selectedCompanyId]);
 
   const docker = environment.find((e) => e.item === 'docker');
   const sidecarLabel = sidecar
@@ -27,40 +35,27 @@ export default function App() {
   };
 
   return (
-    <main className="app">
-      <header className="app-header">
-        <div>
-          <h1>Operon</h1>
-          <p className="subtitle">0 人 Agent 公司 — 控制室</p>
-        </div>
-        {sidecarRunning && sidecar?.port ? (
-          <button
-            type="button"
-            className="btn-primary"
-            onClick={() => setShowWizard(true)}
-          >
-            + 创建公司
-          </button>
-        ) : null}
-      </header>
+    <main className={`app ${companies.length > 0 ? 'app-wide' : ''}`}>
+      {!companies.length && !showWizard ? (
+        <header className="app-header">
+          <div>
+            <h1>Operon</h1>
+            <p className="subtitle">0 人 Agent 公司 — 控制室</p>
+          </div>
+        </header>
+      ) : null}
 
-      <section className="status-card compact">
-        <p>
-          Sidecar：<span id="sidecar-status">{sidecarLabel}</span>
-          {sidecar?.port ? ` (:${sidecar.port})` : null}
-        </p>
-        {sidecar?.errorMessage ? (
-          <p className="error">{sidecar.errorMessage}</p>
-        ) : null}
-        {sidecar?.status === 'SC_ERROR' && isTauri ? (
-          <button type="button" onClick={() => void retry()}>
-            重试启动 Sidecar
-          </button>
-        ) : null}
-        <p className="version">v{OPERON_VERSION}</p>
-      </section>
+      {sidecarRunning && sidecar?.port && companies.length > 0 && !showWizard ? (
+        <ControlRoom
+          port={sidecar.port}
+          companies={companies}
+          selectedCompanyId={selectedCompanyId || companies[0].id}
+          onSelectCompany={setSelectedCompanyId}
+          onCreateCompany={() => setShowWizard(true)}
+        />
+      ) : null}
 
-      {sidecarRunning && sidecar?.port ? (
+      {sidecarRunning && sidecar?.port && (showWizard || companies.length === 0) ? (
         <section className="workspace-section">
           {showWizard ? (
             <CompanyWizard
@@ -76,25 +71,32 @@ export default function App() {
                 开始创建向导
               </button>
             </div>
-          ) : (
-            <div className="company-list">
-              <h2>我的公司</h2>
-              {loading ? <p className="hint">加载中…</p> : null}
-              {error ? <p className="error">{error}</p> : null}
-              <ul>
-                {companies.map((c) => (
-                  <li key={c.id} className="company-item">
-                    <strong>{c.name}</strong>
-                    <span className="badge">{c.status}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+          ) : null}
         </section>
       ) : null}
 
-      {docker ? (
+      {!companies.length ? (
+        <section className="status-card compact">
+          <p>
+            Sidecar：<span id="sidecar-status">{sidecarLabel}</span>
+            {sidecar?.port ? ` (:${sidecar.port})` : null}
+          </p>
+          {sidecar?.errorMessage ? (
+            <p className="error">{sidecar.errorMessage}</p>
+          ) : null}
+          {sidecar?.status === 'SC_ERROR' && isTauri ? (
+            <button type="button" onClick={() => void retry()}>
+              重试启动 Sidecar
+            </button>
+          ) : null}
+          <p className="version">v{OPERON_VERSION}</p>
+        </section>
+      ) : null}
+
+      {loading && companies.length === 0 ? <p className="hint">加载公司列表…</p> : null}
+      {error && companies.length === 0 ? <p className="error">{error}</p> : null}
+
+      {docker && !companies.length ? (
         <section className="status-card">
           <h2>环境检测</h2>
           <ul>
@@ -106,7 +108,7 @@ export default function App() {
         </section>
       ) : null}
 
-      {paths ? (
+      {paths && !companies.length ? (
         <section className="status-card paths">
           <h2>数据目录</h2>
           <dl>

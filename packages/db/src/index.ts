@@ -18,5 +18,7 @@ export * from './repos/task-repo.js';
 export * from './repos/worker-run-repo.js';
 export * from './repos/control-loop-repo.js';
 export * from './repos/department-repo.js';
+export * from './objective-status.js';
+export * from './validation/worker-input.js';
 export * from './validation/company-input.js';
 export * from './test-fixtures.js';

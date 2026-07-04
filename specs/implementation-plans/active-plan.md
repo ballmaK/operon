@@ -35,7 +35,7 @@
 ## Phase 2 — Core UI (M01 → M02 → M03)
 
 - [x] M01: Company create wizard UI (ref: docs/prd/modules/M01-company-workspace.md)
-- [ ] M01: Objective CRUD + control room layout shell (ref: docs/prd/modules/M01-company-workspace.md)
+- [x] M01: Objective CRUD + control room layout shell (ref: docs/prd/modules/M01-company-workspace.md)
 - [ ] M02: Department list + Task list UI (ref: docs/prd/modules/M02-department-task.md)
 - [ ] M02: Worker live execution status panel (ref: docs/prd/modules/M02-department-task.md)
 - [ ] M03: Transcript timeline component (ref: docs/prd/modules/M03-transcript-proof.md)
