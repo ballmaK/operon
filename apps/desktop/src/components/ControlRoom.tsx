@@ -9,6 +9,9 @@ import { ProofWall } from './ProofWall';
 import { AssetLibrary } from './AssetLibrary';
 import { HandoffPanel, fetchDeptHandoffCounts } from './HandoffPanel';
 import { RhythmCenter } from './RhythmCenter';
+import { ApprovalCenter } from './ApprovalCenter';
+import { SettingsPanel } from './SettingsPanel';
+import { OkrTreePanel } from './OkrTreePanel';
 import {
   completeObjective,
   createObjective,
@@ -21,7 +24,7 @@ import {
   updateObjective,
 } from '../lib/sidecar-api';
 
-type MainView = 'room' | 'tasks' | 'handoffs' | 'rhythm' | 'transcripts' | 'proofs' | 'assets';
+type MainView = 'room' | 'tasks' | 'handoffs' | 'rhythm' | 'transcripts' | 'proofs' | 'assets' | 'approvals' | 'settings' | 'okr';
 
 interface ControlRoomProps {
   port: number;
@@ -132,6 +135,7 @@ export function ControlRoom({
     { id: 'handoffs', label: '交接' },
     { id: 'rhythm', label: '运营节奏' },
     { id: 'transcripts', label: '转录' },
+    { id: 'okr', label: 'OKR' },
     { id: 'proofs', label: '证明墙' },
     { id: 'assets', label: '资产库' },
   ];
@@ -162,12 +166,19 @@ export function ControlRoom({
             </button>
           ))}
         </nav>
-        <span className="topbar-item">
+        <button
+          type="button"
+          className={`topbar-item btn-link ${view === 'approvals' ? 'active' : ''}`}
+          onClick={() => setView('approvals')}
+        >
           审批
           {data.pendingApprovals > 0 ? (
             <span className="approval-badge">{data.pendingApprovals}</span>
           ) : null}
-        </span>
+        </button>
+        <button type="button" className="btn-secondary btn-sm" onClick={() => setView('settings')}>
+          设置
+        </button>
         <button type="button" className="btn-secondary btn-sm" onClick={onCreateCompany}>
           + 公司
         </button>
@@ -371,6 +382,24 @@ export function ControlRoom({
       {view === 'assets' ? (
         <div className="control-room-main padded">
           <AssetLibrary port={port} companyId={company.id} />
+        </div>
+      ) : null}
+
+      {view === 'approvals' ? (
+        <div className="control-room-main padded">
+          <ApprovalCenter port={port} onChange={() => void refresh()} />
+        </div>
+      ) : null}
+
+      {view === 'settings' ? (
+        <div className="control-room-main padded">
+          <SettingsPanel port={port} />
+        </div>
+      ) : null}
+
+      {view === 'okr' ? (
+        <div className="control-room-main padded">
+          <OkrTreePanel port={port} objectives={data.objectives} />
         </div>
       ) : null}
     </div>

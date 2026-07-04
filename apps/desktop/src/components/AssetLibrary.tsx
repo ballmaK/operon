@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { AssetItem } from '@operon/shared-types';
-import { getAssetContent, listAssets } from '../lib/sidecar-api';
+import { getAssetContent, listAssets, revealAsset } from '../lib/sidecar-api';
+import { revealPathInShell } from '../lib/tauri-platform';
 
 interface AssetLibraryProps {
   port: number;
@@ -65,6 +66,17 @@ export function AssetLibrary({ port, companyId }: AssetLibraryProps) {
               <h3>{selected.name}</h3>
               <p className="hint">{selected.path}</p>
               <p className="hint">来源：{selected.objectiveTitle}</p>
+              <button
+                type="button"
+                className="btn-secondary btn-sm"
+                onClick={() =>
+                  void revealAsset(port, selected.id, selected.path).then((r) =>
+                    revealPathInShell(r.absolutePath),
+                  )
+                }
+              >
+                在资源管理器中显示
+              </button>
               {preview ? (
                 <pre className="asset-content">
                   {preview.content}

@@ -401,3 +401,58 @@ describe('M08/M04 handoffs and rhythm API', () => {
     expect(report.body.reportType).toBe('daily');
   });
 });
+
+describe('Phase 4 — approvals, model config, OKR, sandbox skills', () => {
+  let dataDir: string;
+  let app: ReturnType<typeof createApp>;
+
+  afterEach(() => {
+    if (app) closeSidecarApp(app);
+    if (dataDir) rmSync(dataDir, { recursive: true, force: true });
+  });
+
+  it('key results, model test, proof accept, sandbox invoke', async () => {
+    dataDir = mkdtempSync(join(tmpdir(), 'operon-sidecar-'));
+    app = createApp({ dataDir });
+    const db = app.locals.db as Parameters<typeof seedTestFixture>[0];
+    const fx = seedTestFixture(db, dataDir);
+
+    const kr = await request(app)
+      .post(`/api/v1/objectives/${fx.objectiveId}/key-results`)
+      .send({ title: 'Deliver MVP demo', targetValue: 1 });
+    expect(kr.status).toBe(201);
+
+    const listKr = await request(app).get(`/api/v1/objectives/${fx.objectiveId}/key-results`);
+    expect(listKr.body).toHaveLength(1);
+
+    const testModel = await request(app)
+      .post('/api/v1/model-configs/test')
+      .send({ role: 'lead_plan' });
+    expect(testModel.body.ok).toBe(true);
+
+    await request(app)
+      .post(`/api/v1/objectives/${fx.objectiveId}/start`)
+      .send({ departmentId: fx.departmentId });
+
+    const proofs = await request(app).get(`/api/v1/companies/${fx.companyId}/proofs`);
+    expect(proofs.body.length).toBeGreaterThan(0);
+
+    const accepted = await request(app).post(`/api/v1/proofs/${proofs.body[0].workerRunId}/accept`);
+    expect(accepted.body.acceptanceStatus).toBe('accepted');
+
+    const session = await request(app)
+      .post('/internal/sandbox/sessions')
+      .send({ runtimeType: 'playwright', agentRunId: 'test-run' });
+    expect(session.status).toBe(201);
+
+    const shot = await request(app)
+      .post('/internal/sandbox/invoke')
+      .send({
+        sessionId: session.body.id,
+        skillCode: 'browser_screenshot',
+        agentRunId: 'test-run',
+        params: { url: 'https://example.com' },
+      });
+    expect(shot.body.screenshotPath).toBe('screenshot.png');
+  });
+});

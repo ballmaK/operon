@@ -19,13 +19,22 @@ export class ModelRouter {
     return config;
   }
 
-  /** MR-01: require credential for provider unless ollama */
   assertCredential(config: ModelConfig): void {
     if (config.provider === 'ollama') return;
     const key = this.credentials.getDecrypted(config.provider);
     if (!key) {
       throw new Error(`Missing API credential for provider: ${config.provider}`);
     }
+  }
+
+  testConnection(role: LlmCompleteRequest['role']): { ok: boolean; message: string; config: ModelConfig } {
+    const config = this.resolveConfig(role);
+    this.assertCredential(config);
+    return {
+      ok: true,
+      message: config.provider === 'ollama' ? 'Ollama localhost reachable (stub)' : 'Credential present',
+      config,
+    };
   }
 
   completeStub(request: LlmCompleteRequest): LlmCompleteResponse {

@@ -9,12 +9,22 @@ import type {
 } from '@operon/shared-types';
 import { getSkill } from './skill-registry.js';
 
+/** Minimal 1x1 PNG for browser_screenshot stub */
+const STUB_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+  'base64',
+);
+
 export class SandboxManager {
   private readonly sessions = new Map<string, SandboxSession>();
 
   constructor(private readonly dataDir: string) {}
 
-  create(input: CreateSandboxSessionRequest): SandboxSession {
+  create(input: CreateSandboxSessionRequest, dockerAvailable = true): SandboxSession {
+    if (input.runtimeType === 'docker') {
+      assertRuntimeAllowed('docker', dockerAvailable);
+    }
+
     const id = randomUUID();
     const workDirRelative = posixJoin('sandboxes', input.agentRunId, id);
     const absDir = join(this.dataDir, workDirRelative);
@@ -24,11 +34,16 @@ export class SandboxManager {
       id,
       runtimeType: input.runtimeType,
       workDirRelative,
-      status: 'SBX_READY',
+      status: input.runtimeType === 'docker' ? 'SBX_CREATING' : 'SBX_READY',
       agentRunId: input.agentRunId,
       createdAt: new Date().toISOString(),
     };
     this.sessions.set(id, session);
+
+    if (input.runtimeType === 'docker') {
+      session.status = 'SBX_READY';
+    }
+
     return session;
   }
 
@@ -49,10 +64,7 @@ export class SandboxManager {
     sessionId: string,
     params: { relativePath: string; content: string },
   ): { writtenPath: string; bytes: number } {
-    const session = this.sessions.get(sessionId);
-    if (!session || session.status === 'SBX_DESTROYED') {
-      throw new Error('Sandbox session not found');
-    }
+    const session = this.requireReadySession(sessionId, ['subprocess']);
     const skill = getSkill('file_write');
     if (!skill) throw new Error('file_write skill not registered');
 
@@ -63,6 +75,45 @@ export class SandboxManager {
     session.status = 'SBX_READY';
 
     return { writtenPath: safeRelative, bytes: Buffer.byteLength(params.content, 'utf8') };
+  }
+
+  invokeBrowserScreenshot(
+    sessionId: string,
+    params: { url?: string },
+  ): { screenshotPath: string; url: string } {
+    const session = this.requireReadySession(sessionId, ['playwright']);
+    session.status = 'SBX_RUNNING';
+    const url = params.url ?? 'about:blank';
+    const screenshotPath = 'screenshot.png';
+    const absPath = join(this.dataDir, session.workDirRelative, screenshotPath);
+    writeFileSync(absPath, STUB_PNG);
+    session.status = 'SBX_READY';
+    return { screenshotPath, url };
+  }
+
+  invokeCodeRun(
+    sessionId: string,
+    params: { code: string; language?: string },
+  ): { stdout: string; exitCode: number; outputPath: string } {
+    const session = this.requireReadySession(sessionId, ['docker']);
+    session.status = 'SBX_RUNNING';
+    const outputPath = 'code_run_output.txt';
+    const absPath = join(this.dataDir, session.workDirRelative, outputPath);
+    const stdout = `[docker-stub] executed ${params.language ?? 'shell'} (${params.code.length} chars)`;
+    writeFileSync(absPath, stdout, 'utf8');
+    session.status = 'SBX_READY';
+    return { stdout, exitCode: 0, outputPath };
+  }
+
+  private requireReadySession(sessionId: string, allowed: SkillRuntime[]): SandboxSession {
+    const session = this.sessions.get(sessionId);
+    if (!session || session.status === 'SBX_DESTROYED') {
+      throw new Error('Sandbox session not found');
+    }
+    if (!allowed.includes(session.runtimeType)) {
+      throw new Error(`Skill runtime mismatch: expected ${allowed.join('|')}, got ${session.runtimeType}`);
+    }
+    return session;
   }
 }
 

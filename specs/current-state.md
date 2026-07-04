@@ -1,6 +1,6 @@
 # Current State — Operon
 
-> Last updated: 2026-07-05 (prd-build-loop session 8 — **all phases complete**)
+> Last updated: 2026-07-05 (prd-build-loop — **Phase 4 complete, all 46/46 tasks**)
 
 ## Progress
 
@@ -9,40 +9,36 @@
 | Phase 0 Platform | 12 / 12 ✅ |
 | Phase 1 Core Loop | 11 / 11 ✅ |
 | Phase 2 Core UI | 6 / 6 ✅ |
-| **Phase 3 Collaboration & Rhythm** | **4 / 4 ✅** |
+| Phase 3 Collaboration & Rhythm | 4 / 4 ✅ |
+| **Phase 4 MVP Hardening & P1** | **13 / 13 ✅** |
 
-**Active plan: 33 / 33 tasks complete.**
+**Active plan: 46 / 46 tasks complete.**
 
-## Phase 3 完整交付
+## Phase 4 交付
 
-### M08 跨部门交接
-- **DB** `005_phase3.sql` — handoffs 表；HandoffRepo 生命周期 sent → accepted → replied/rejected
-- **API** POST `/handoffs`；GET inbox / pending-count；POST accept/reject/reply
-- **UI** HandoffPanel（创建 + 收件箱）；部门侧栏 `handoff-badge` 待处理计数
+### MVP 补齐
+- 多公司切换（顶栏 dropdown，Phase 3 已有，Phase 4 确认）
+- **ApprovalCenter** — 待审批列表 + 批准/拒绝
+- **SettingsPanel** — API Key + 模型路由配置 + 测试连接
+- **Sandbox** — `browser_screenshot` + `code_run` Docker stub
+- **AssetLibrary** — 「在资源管理器中显示」+ Tauri `reveal_path_in_shell`
 
-### M04 运营节奏
-- **DB** blockers、rhythm_schedules、rhythm_reports 表；RhythmService 生成日复盘/周复盘报告
-- **API** GET/PUT `/rhythm/schedule`；GET reports；POST trigger；GET/POST blockers
-- **Sidecar** 60s 轮询 `shouldRunDailyReview` 自动触发日复盘
-- **UI** RhythmCenter（节奏配置、手动触发、阻塞列表、摘要卡片）
-
-### 控制室导航
-顶栏 Tab：控制室 | 任务 | 转录 | 证明墙 | 资产库 | **交接** | **运营节奏**
+### P1 增强
+- **KeyResult** schema + OKR 树 UI
+- ControlLoop synthesize 后 rollup KeyResult 进度
+- 证明墙类型/状态筛选 + 验收/拒绝
+- Tauri `tauri-plugin-updater` 脚手架 + `get_updater_config`
 
 ## Tests
 
 ```bash
-pnpm test   # 67 tests passing (38 db + 14 sidecar + 15 desktop)
+pnpm test   # 73 tests passing (41 db + 15 sidecar + 15 desktop + 2 shared-types)
 ```
-
-## Next up
-
-All planned tasks from `docs/prd/README.md` Phase 0→3 are implemented.
-
-Suggested follow-ups:
-- Phase 4+ modules from PRD (if any) or production hardening
-- See `specs/architecture-review.md` for remaining opportunities (ControlRoom split, bulk API, HTTP auth)
 
 ## Blockers
 
 - None
+
+## Next up
+
+PRD Phase 0–4 全部实现完毕。可选：生产签名、真实 LLM/Playwright/Docker 集成、P2 云同步。

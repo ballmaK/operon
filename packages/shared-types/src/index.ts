@@ -279,3 +279,4 @@ export const MAX_MINIMAL_MEMORY_BYTES = 2048;
 export * from './m02-m03.js';
 export * from './m08-m04.js';
 export * from './validation-limits.js';
+export * from './m-p1.js';

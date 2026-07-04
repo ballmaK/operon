@@ -1,5 +1,6 @@
 import type { ControlLoop, ControlLoopPhase } from '@operon/shared-types';
 import type { ControlLoopRepo } from '../repos/control-loop-repo.js';
+import type { KeyResultRepo } from '../repos/key-result-repo.js';
 import type { ObjectiveRepo } from '../repos/objective-repo.js';
 import type { TranscriptRepo } from '../repos/transcript-repo.js';
 import type { LeadService } from './lead-service.js';
@@ -19,6 +20,7 @@ export class ControlLoopService {
     private readonly objectives: ObjectiveRepo,
     private readonly lead: LeadService,
     private readonly transcripts: TranscriptRepo,
+    private readonly keyResults: KeyResultRepo,
   ) {}
 
   start(objectiveId: string, departmentId: string): ControlLoop {
@@ -77,6 +79,7 @@ export class ControlLoopService {
     loop = this.advancePhase(loopId, 'collect')!;
     loop = this.advancePhase(loopId, 'synthesize')!;
     this.lead.synthesize(loop.objectiveId, departmentId);
+    this.keyResults.rollupFromProofs(loop.objectiveId, tasks.length);
 
     loop = this.advancePhase(loopId, 'decide')!;
     this.loops.complete(loopId);

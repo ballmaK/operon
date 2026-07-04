@@ -76,6 +76,7 @@ graph TB
 | Phase 1 | M11 → M10 → M07 → M06 → M05 | 单 Objective 控制循环闭环 |
 | Phase 2 | M01 → M02 → M03 | 核心 UI 可观测 |
 | Phase 3 | M08 → M04 | 多部门协作与运营节奏 |
+| **Phase 4** | M16 → M10 → M01 → M11 → M03 → M12 | MVP 补齐（审批/沙箱）+ P1（OKR/模型 UI/证明墙/自动更新） |
 
 ---
 

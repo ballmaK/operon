@@ -40,6 +40,50 @@ fn retry_sidecar_start(
     get_sidecar_status(state)
 }
 
+#[tauri::command]
+fn reveal_path_in_shell(absolute_path: String) -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new("explorer")
+            .args(["/select,", &absolute_path])
+            .spawn()
+            .map_err(|e| e.to_string())?;
+        return Ok(());
+    }
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .args(["-R", &absolute_path])
+            .spawn()
+            .map_err(|e| e.to_string())?;
+        return Ok(());
+    }
+    #[cfg(target_os = "linux")]
+    {
+        use std::path::Path;
+        let parent = Path::new(&absolute_path)
+            .parent()
+            .map(|p| p.to_string_lossy().to_string())
+            .unwrap_or(absolute_path.clone());
+        std::process::Command::new("xdg-open")
+            .arg(parent)
+            .spawn()
+            .map_err(|e| e.to_string())?;
+        return Ok(());
+    }
+    #[allow(unreachable_code)]
+    Ok(())
+}
+
+#[tauri::command]
+fn get_updater_config() -> serde_json::Value {
+    serde_json::json!({
+        "enabled": true,
+        "endpoint": "https://releases.operon.local/update/{{target}}/{{current_version}}",
+        "pubkey": ""
+    })
+}
+
 fn setup_tray(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     let show = MenuItem::with_id(app, "show", "打开控制室", true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
@@ -78,12 +122,15 @@ fn setup_tray(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(Mutex::new(SidecarState::new()) as SharedSidecar)
         .invoke_handler(tauri::generate_handler![
             get_sidecar_status,
             get_platform_paths,
             get_environment_checks,
             retry_sidecar_start,
+            reveal_path_in_shell,
+            get_updater_config,
         ])
         .setup(|app| {
             let paths = resolve_platform_paths()?;

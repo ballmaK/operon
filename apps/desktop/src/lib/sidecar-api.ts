@@ -15,6 +15,13 @@ import type {
   RhythmSchedule,
   RhythmReport,
   DepartmentSummary,
+  ApiCredentialView,
+  ModelConfig,
+  LlmRole,
+  ModelConfigTestResult,
+  KeyResult,
+  CreateKeyResultRequest,
+  AssetRevealResponse,
 } from '@operon/shared-types';
 import { SIDECAR_DEFAULT_PORT } from '@operon/shared-types';
 
@@ -337,5 +344,113 @@ export async function resolveBlocker(port: number, blockerId: string): Promise<B
   return requestJson<Blocker>(port, `/api/v1/blockers/${blockerId}/resolve`, {
     method: 'POST',
     body: '{}',
+  });
+}
+
+export async function listAllApprovals(port: number, status?: string): Promise<Approval[]> {
+  const qs = status ? `?status=${status}` : '';
+  return requestJson<Approval[]>(port, `/api/v1/approvals${qs}`);
+}
+
+export async function approveRequest(port: number, approvalId: string): Promise<Approval> {
+  return requestJson<Approval>(port, `/api/v1/approvals/${approvalId}/approve`, {
+    method: 'POST',
+    body: '{}',
+  });
+}
+
+export async function rejectRequest(port: number, approvalId: string): Promise<Approval> {
+  return requestJson<Approval>(port, `/api/v1/approvals/${approvalId}/reject`, {
+    method: 'POST',
+    body: '{}',
+  });
+}
+
+export async function listCredentials(port: number): Promise<ApiCredentialView[]> {
+  return requestJson<ApiCredentialView[]>(port, '/api/v1/credentials');
+}
+
+export async function upsertCredential(
+  port: number,
+  provider: string,
+  apiKey: string,
+): Promise<ApiCredentialView> {
+  return requestJson<ApiCredentialView>(port, '/api/v1/credentials', {
+    method: 'PUT',
+    body: JSON.stringify({ provider, apiKey }),
+  });
+}
+
+export async function listModelConfigs(port: number): Promise<ModelConfig[]> {
+  return requestJson<ModelConfig[]>(port, '/api/v1/model-configs');
+}
+
+export async function updateModelConfig(
+  port: number,
+  role: LlmRole,
+  input: { provider: string; modelName: string; apiBaseUrl?: string | null },
+): Promise<ModelConfig> {
+  return requestJson<ModelConfig>(port, `/api/v1/model-configs/${role}`, {
+    method: 'PUT',
+    body: JSON.stringify(input),
+  });
+}
+
+export async function testModelConfig(port: number, role: LlmRole): Promise<ModelConfigTestResult> {
+  return requestJson<ModelConfigTestResult>(port, '/api/v1/model-configs/test', {
+    method: 'POST',
+    body: JSON.stringify({ role }),
+  });
+}
+
+export async function listKeyResults(port: number, objectiveId: string): Promise<KeyResult[]> {
+  return requestJson<KeyResult[]>(port, `/api/v1/objectives/${objectiveId}/key-results`);
+}
+
+export async function createKeyResult(
+  port: number,
+  objectiveId: string,
+  input: CreateKeyResultRequest,
+): Promise<KeyResult> {
+  return requestJson<KeyResult>(port, `/api/v1/objectives/${objectiveId}/key-results`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export async function completeKeyResult(port: number, keyResultId: string): Promise<KeyResult> {
+  return requestJson<KeyResult>(port, `/api/v1/key-results/${keyResultId}/complete`, {
+    method: 'POST',
+    body: '{}',
+  });
+}
+
+export async function listProofsFiltered(
+  port: number,
+  companyId: string,
+  filters: { type?: string; status?: string } = {},
+): Promise<ProofWallItem[]> {
+  const params = new URLSearchParams();
+  if (filters.type) params.set('type', filters.type);
+  if (filters.status) params.set('status', filters.status);
+  const qs = params.toString();
+  return requestJson<ProofWallItem[]>(
+    port,
+    `/api/v1/companies/${companyId}/proofs${qs ? `?${qs}` : ''}`,
+  );
+}
+
+export async function acceptProof(port: number, workerRunId: string): Promise<{ acceptanceStatus: string }> {
+  return requestJson(port, `/api/v1/proofs/${workerRunId}/accept`, { method: 'POST', body: '{}' });
+}
+
+export async function rejectProof(port: number, workerRunId: string): Promise<{ acceptanceStatus: string }> {
+  return requestJson(port, `/api/v1/proofs/${workerRunId}/reject`, { method: 'POST', body: '{}' });
+}
+
+export async function revealAsset(port: number, assetId: string, path: string): Promise<AssetRevealResponse> {
+  return requestJson<AssetRevealResponse>(port, `/api/v1/assets/${assetId}/reveal`, {
+    method: 'POST',
+    body: JSON.stringify({ path }),
   });
 }

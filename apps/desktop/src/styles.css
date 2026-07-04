@@ -918,3 +918,90 @@ button {
   padding: 0.625rem 0.75rem;
   font: inherit;
 }
+
+.approval-list,
+.okr-kr-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.approval-row,
+.okr-kr {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #334155;
+}
+
+.approval-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.settings-tabs {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.settings-tabs button.active {
+  background: #334155;
+}
+
+.model-config-row {
+  display: grid;
+  grid-template-columns: 140px 1fr 1fr auto;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  align-items: center;
+}
+
+.proof-filters {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.acceptance.pending {
+  color: #fbbf24;
+}
+
+.acceptance.accepted {
+  color: #4ade80;
+}
+
+.acceptance.rejected {
+  color: #f87171;
+}
+
+.proof-actions {
+  margin-top: 0.5rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.okr-objective-node {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #172033;
+  border-radius: 8px;
+}
+
+.okr-add {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: #e2e8f0;
+  cursor: pointer;
+  font: inherit;
+}
+
+.btn-link.active {
+  color: #60a5fa;
+}

@@ -1,10 +1,16 @@
 import { Router, type Request, type Response } from 'express';
-import type { TranscriptRepo } from '@operon/db';
-import { listAssetsForCompany, listProofsForCompany, readAssetPreview } from '@operon/db';
+import type { ProofAcceptanceRepo, TranscriptRepo } from '@operon/db';
+import {
+  listAssetsForCompany,
+  listProofsForCompany,
+  readAssetPreview,
+  resolveAssetAbsolutePath,
+  type ProofListFilters,
+} from '@operon/db';
 
 export interface ProofsRouterDeps {
-  listProofs: (companyId: string) => ReturnType<typeof listProofsForCompany>;
-  listAssets: (companyId: string) => ReturnType<typeof listAssetsForCompany>;
+  db: Parameters<typeof listProofsForCompany>[0];
+  proofAcceptance: ProofAcceptanceRepo;
   transcripts: TranscriptRepo;
   dataDir: string;
 }
@@ -13,11 +19,16 @@ export function proofsRouter(deps: ProofsRouterDeps): Router {
   const router = Router();
 
   router.get('/companies/:id/proofs', (req: Request, res: Response) => {
-    res.json(deps.listProofs(String(req.params.id)));
+    const filters: ProofListFilters = {};
+    const type = req.query.type as ProofListFilters['type'] | undefined;
+    const status = req.query.status as ProofListFilters['acceptanceStatus'] | undefined;
+    if (type) filters.type = type;
+    if (status) filters.acceptanceStatus = status;
+    res.json(listProofsForCompany(deps.db, String(req.params.id), filters));
   });
 
   router.get('/companies/:id/assets', (req: Request, res: Response) => {
-    res.json(deps.listAssets(String(req.params.id)));
+    res.json(listAssetsForCompany(deps.db, String(req.params.id)));
   });
 
   router.get('/assets/:id/content', (req: Request, res: Response) => {
@@ -32,6 +43,30 @@ export function proofsRouter(deps: ProofsRouterDeps): Router {
       return;
     }
     res.json({ id: String(req.params.id), path, ...preview });
+  });
+
+  router.post('/assets/:id/reveal', (req: Request, res: Response) => {
+    const path = typeof req.body?.path === 'string' ? req.body.path : '';
+    if (!path) {
+      res.status(400).json({ error: 'path required' });
+      return;
+    }
+    const absolutePath = resolveAssetAbsolutePath(deps.dataDir, path);
+    if (!absolutePath) {
+      res.status(404).json({ error: 'Asset not found' });
+      return;
+    }
+    res.json({ absolutePath });
+  });
+
+  router.post('/proofs/:workerRunId/accept', (req: Request, res: Response) => {
+    const status = deps.proofAcceptance.set(String(req.params.workerRunId), 'accepted');
+    res.json({ workerRunId: String(req.params.workerRunId), acceptanceStatus: status });
+  });
+
+  router.post('/proofs/:workerRunId/reject', (req: Request, res: Response) => {
+    const status = deps.proofAcceptance.set(String(req.params.workerRunId), 'rejected');
+    res.json({ workerRunId: String(req.params.workerRunId), acceptanceStatus: status });
   });
 
   router.post('/transcripts/correct', (req: Request, res: Response) => {

@@ -47,3 +47,21 @@
 - [x] M08: Cross-Lead handoff notification in department UI (ref: docs/prd/modules/M08-handoff.md)
 - [x] M04: Daily/weekly rhythm scheduler (ref: docs/prd/modules/M04-rhythm.md)
 - [x] M04: Rhythm report + blockers summary UI (ref: docs/prd/modules/M04-rhythm.md)
+
+## Phase 4 — MVP Hardening & P1 (M16 → M10 → M01 → M11 → M03 → M12)
+
+> Source: `docs/prd/00-macro-shared.md` §2.1 P1 + P0 stubs (Playwright/Docker/审批 UI)
+
+- [x] M01: Multi-company switcher dropdown in control room top bar (ref: docs/prd/modules/M01-company-workspace.md P-M01-01)
+- [x] M16: Approval center panel — list pending + approve/reject (ref: docs/prd/modules/M16-auth-approval.md P-M16-01)
+- [x] M16: Settings — ApiCredential form + masked display (ref: docs/prd/modules/M16-auth-approval.md P-M16-02)
+- [x] M10: Playwright skill executor — browser_screenshot stub (ref: docs/prd/modules/M10-runtime-sandbox.md)
+- [x] M10: code_run Docker sandbox session lifecycle (ref: docs/prd/modules/M10-runtime-sandbox.md SB-03)
+- [x] M03: Asset reveal Tauri IPC — open in Explorer (ref: docs/prd/modules/M03-transcript-proof.md POST reveal)
+- [x] M11: Model config settings UI — role routing editor (ref: docs/prd/modules/M11-model-router.md)
+- [x] M11: POST /api/v1/model-configs/test connection endpoint (ref: docs/prd/modules/M11-model-router.md)
+- [x] M09: KeyResult SQLite schema + KeyResultRepo CRUD (ref: docs/prd/modules/M01-company-workspace.md P1 OKR, C05)
+- [x] M01: OKR tree view UI — Objective → Key Results (ref: docs/prd/modules/M01-company-workspace.md)
+- [x] M05: ControlLoop progress rolls up KeyResult completion (ref: docs/prd/modules/M05-control-loop.md P1)
+- [x] M03: Proof wall P1 — type/status filters + accept/reject proof (ref: docs/prd/modules/M03-transcript-proof.md)
+- [x] M12: Tauri auto-update plugin scaffold (ref: docs/prd/modules/M12-platform-shell.md P1)

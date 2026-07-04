@@ -11,6 +11,7 @@
 | Department | Bounded context with charter, Lead, and memory boundary |
 | Control Loop | understand → plan → dispatch → collect → synthesize → decide |
 | Handoff | Structured cross-Lead transfer with summary, assets, request |
+| KeyResult | Measurable outcome under an Objective (OKR P1) |
 | Proof | Verifiable deliverable: file, screenshot, test, URL, revenue |
 | Transcript | Append-only audit log of who did what and why |
 | Sidecar | Local backend process spawned by Tauri desktop shell |

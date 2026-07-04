@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react';
 import type { ProofWallItem } from '@operon/shared-types';
-import { listProofs } from '../lib/sidecar-api';
+import {
+  acceptProof,
+  listProofsFiltered,
+  rejectProof,
+} from '../lib/sidecar-api';
 
 interface ProofWallProps {
   port: number;
@@ -10,19 +14,48 @@ interface ProofWallProps {
 export function ProofWall({ port, companyId }: ProofWallProps) {
   const [proofs, setProofs] = useState<ProofWallItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [typeFilter, setTypeFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
 
-  useEffect(() => {
+  const refresh = () => {
     setLoading(true);
-    void listProofs(port, companyId)
+    void listProofsFiltered(port, companyId, {
+      type: typeFilter || undefined,
+      status: statusFilter || undefined,
+    })
       .then(setProofs)
       .finally(() => setLoading(false));
-  }, [port, companyId]);
+  };
+
+  useEffect(() => {
+    refresh();
+  }, [port, companyId, typeFilter, statusFilter]);
+
+  const review = async (id: string, action: 'accept' | 'reject') => {
+    if (action === 'accept') await acceptProof(port, id);
+    else await rejectProof(port, id);
+    refresh();
+  };
 
   return (
     <section className="proof-wall">
       <div className="section-header">
         <h2>证明墙</h2>
-        <span className="hint">TR-02：仅展示已关联 Proof 的条目</span>
+        <div className="proof-filters">
+          <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+            <option value="">全部类型</option>
+            <option value="file">file</option>
+            <option value="screenshot">screenshot</option>
+            <option value="test">test</option>
+            <option value="url">url</option>
+          </select>
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+            <option value="">全部状态</option>
+            <option value="pending">pending</option>
+            <option value="accepted">accepted</option>
+            <option value="rejected">rejected</option>
+          </select>
+        </div>
       </div>
 
       {loading ? <p className="hint">加载中…</p> : null}
@@ -38,13 +71,19 @@ export function ProofWall({ port, companyId }: ProofWallProps) {
                 <h3>{p.summary}</h3>
                 <p className="proof-meta">
                   <span className="badge">{p.objectiveTitle}</span>
+                  <span className={`acceptance ${p.acceptanceStatus}`}>{p.acceptanceStatus}</span>
                   <span className="hint">{new Date(p.createdAt).toLocaleString()}</span>
                 </p>
                 {p.path ? <code className="proof-path">{p.path}</code> : null}
-                {p.url ? (
-                  <a href={p.url} target="_blank" rel="noreferrer">
-                    {p.url}
-                  </a>
+                {p.acceptanceStatus === 'pending' ? (
+                  <div className="proof-actions">
+                    <button type="button" className="btn-primary btn-sm" onClick={() => void review(p.workerRunId, 'accept')}>
+                      验收
+                    </button>
+                    <button type="button" className="btn-secondary btn-sm" onClick={() => void review(p.workerRunId, 'reject')}>
+                      拒绝
+                    </button>
+                  </div>
                 ) : null}
               </div>
             </article>

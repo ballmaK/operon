@@ -28,3 +28,5 @@ export * from './repos/rhythm-repo.js';
 export * from './services/rhythm-service.js';
 export * from './validation/handoff-input.js';
 export * from './sidecar-context.js';
+export * from './repos/key-result-repo.js';
+export * from './repos/proof-acceptance-repo.js';

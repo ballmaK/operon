@@ -4,6 +4,7 @@ import type { CreateSandboxSessionRequest, InvokeSkillRequest } from '@operon/sh
 
 export function sandboxRouter(sandbox: SandboxManager): Router {
   const router = Router();
+  const dockerAvailable = process.env.OPERON_DOCKER_OK !== '0';
 
   router.post('/sessions', (req: Request, res: Response) => {
     try {
@@ -12,7 +13,7 @@ export function sandboxRouter(sandbox: SandboxManager): Router {
         res.status(400).json({ error: 'runtimeType and agentRunId required' });
         return;
       }
-      const session = sandbox.create(body);
+      const session = sandbox.create(body, dockerAvailable);
       res.status(201).json(session);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Sandbox error';
@@ -40,6 +41,19 @@ export function sandboxRouter(sandbox: SandboxManager): Router {
         const relativePath = String(body.params.relativePath ?? 'output.txt');
         const content = String(body.params.content ?? '');
         const result = sandbox.invokeFileWrite(body.sessionId, { relativePath, content });
+        res.json({ skillCode: body.skillCode, ...result });
+        return;
+      }
+      if (body.skillCode === 'browser_screenshot') {
+        const url = typeof body.params.url === 'string' ? body.params.url : undefined;
+        const result = sandbox.invokeBrowserScreenshot(body.sessionId, { url });
+        res.json({ skillCode: body.skillCode, ...result });
+        return;
+      }
+      if (body.skillCode === 'code_run') {
+        const code = String(body.params.code ?? '');
+        const language = typeof body.params.language === 'string' ? body.params.language : undefined;
+        const result = sandbox.invokeCodeRun(body.sessionId, { code, language });
         res.json({ skillCode: body.skillCode, ...result });
         return;
       }

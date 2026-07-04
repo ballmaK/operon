@@ -25,6 +25,7 @@ import { tasksRouter } from './routes/tasks.js';
 import { proofsRouter } from './routes/proofs.js';
 import { handoffsRouter } from './routes/handoffs.js';
 import { rhythmRouter } from './routes/rhythm.js';
+import { keyResultsRouter } from './routes/key-results.js';
 
 export interface SidecarOptions {
   dataDir?: string;
@@ -106,12 +107,13 @@ export function createApp(options: SidecarOptions = {}): Express {
   app.use(
     '/api/v1',
     proofsRouter({
-      listProofs: ctx.listProofs,
-      listAssets: ctx.listAssets,
+      db: ctx.db,
+      proofAcceptance: ctx.proofAcceptance,
       transcripts: ctx.transcripts,
       dataDir,
     }),
   );
+  app.use('/api/v1', keyResultsRouter(ctx.objectives, ctx.keyResults));
   app.use('/api/v1', handoffsRouter({ handoffs: ctx.handoffs, departments: ctx.departments, transcripts: ctx.transcripts }));
   app.use(
     '/api/v1',
@@ -123,7 +125,7 @@ export function createApp(options: SidecarOptions = {}): Express {
     }),
   );
   app.use('/api/v1/approvals', approvalsRouter(ctx.approvals, ctx.transcripts));
-  app.use('/api/v1/model-configs', modelConfigsRouter(ctx.modelConfigs));
+  app.use('/api/v1/model-configs', modelConfigsRouter(ctx.modelConfigs, ctx.modelRouter));
   app.use('/api/v1/skills', skillsRouter());
   app.use('/api/v1', controlLoopsRouter(ctx.services.controlLoop));
   app.use('/internal/llm', llmRouter(ctx.modelRouter));

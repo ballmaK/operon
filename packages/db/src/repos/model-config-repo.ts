@@ -36,6 +36,61 @@ export class ModelConfigRepo {
       .get(role) as ModelConfig | undefined;
     return row ?? null;
   }
+
+  upsert(input: {
+    role: LlmRole;
+    provider: string;
+    modelName: string;
+    apiBaseUrl?: string | null;
+    temperature?: number;
+    maxTokens?: number;
+  }): ModelConfig {
+    const existing = this.getByRole(input.role);
+    const now = new Date().toISOString();
+    if (existing) {
+      this.db
+        .prepare(
+          `UPDATE model_configs SET provider = ?, model_name = ?, api_base_url = ?,
+           temperature = ?, max_tokens = ?, updated_at = ? WHERE role = ?`,
+        )
+        .run(
+          input.provider,
+          input.modelName,
+          input.apiBaseUrl ?? null,
+          input.temperature ?? existing.temperature,
+          input.maxTokens ?? existing.maxTokens,
+          now,
+          input.role,
+        );
+      return this.getByRole(input.role)!;
+    }
+    const cfg: ModelConfig = {
+      id: randomUUID(),
+      role: input.role,
+      provider: input.provider,
+      modelName: input.modelName,
+      apiBaseUrl: input.apiBaseUrl ?? null,
+      temperature: input.temperature ?? 0.3,
+      maxTokens: input.maxTokens ?? 4096,
+      inputPricePerMillion: 0,
+      outputPricePerMillion: 0,
+      fallbackProvider: null,
+      fallbackModelName: null,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.db
+      .prepare(
+        `INSERT INTO model_configs
+         (id, role, provider, model_name, api_base_url, temperature, max_tokens,
+          input_price_per_million, output_price_per_million,
+          fallback_provider, fallback_model_name, created_at, updated_at)
+         VALUES (@id, @role, @provider, @modelName, @apiBaseUrl, @temperature, @maxTokens,
+                 0, 0, NULL, NULL, @createdAt, @updatedAt)`,
+      )
+      .run(cfg);
+    return cfg;
+  }
 }
 
 export function seedDefaultModelConfigs(db: Database.Database): void {

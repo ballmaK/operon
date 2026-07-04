@@ -12,6 +12,8 @@ import { ObjectiveRepo } from './repos/objective-repo.js';
 import { TaskRepo } from './repos/task-repo.js';
 import { WorkerRunRepo } from './repos/worker-run-repo.js';
 import { HandoffRepo } from './repos/handoff-repo.js';
+import { KeyResultRepo } from './repos/key-result-repo.js';
+import { ProofAcceptanceRepo } from './repos/proof-acceptance-repo.js';
 import { BlockerRepo } from './repos/blocker-repo.js';
 import { RhythmScheduleRepo, RhythmReportRepo } from './repos/rhythm-repo.js';
 import { RhythmService } from './services/rhythm-service.js';
@@ -39,6 +41,9 @@ export interface SidecarDeps {
   blockers: BlockerRepo;
   rhythmSchedules: RhythmScheduleRepo;
   rhythmReports: RhythmReportRepo;
+  keyResults: KeyResultRepo;
+  proofAcceptance: ProofAcceptanceRepo;
+  db: Database.Database;
   services: OperonServices;
   rhythm: RhythmService;
   listProofs: (companyId: string) => ReturnType<typeof listProofsForCompany>;
@@ -65,6 +70,8 @@ export function buildSidecarContext(
   const blockers = new BlockerRepo(db);
   const rhythmSchedules = new RhythmScheduleRepo(db);
   const rhythmReports = new RhythmReportRepo(db);
+  const keyResults = new KeyResultRepo(db);
+  const proofAcceptance = new ProofAcceptanceRepo(db);
 
   const services = buildOperonServicesFromRepos({
     db,
@@ -106,6 +113,9 @@ export function buildSidecarContext(
     blockers,
     rhythmSchedules,
     rhythmReports,
+    keyResults,
+    proofAcceptance,
+    db,
     services,
     rhythm,
     listProofs: (companyId) => listProofsForCompany(db, companyId),

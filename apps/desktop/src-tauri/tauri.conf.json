@@ -23,6 +23,16 @@
       "csp": null
     }
   },
+  "plugins": {
+    "updater": {
+      "active": true,
+      "endpoints": [
+        "https://releases.operon.local/update/{{target}}/{{current_version}}"
+      ],
+      "dialog": true,
+      "pubkey": ""
+    }
+  },
   "bundle": {
     "active": true,
     "targets": "all",
