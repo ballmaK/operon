@@ -180,3 +180,62 @@ describe('Phase 1 M07/M06/M05 loop API', () => {
     expect(get.body.phase).toBe('decide');
   });
 });
+
+describe('M01 companies API', () => {
+  let dataDir: string;
+  let app: ReturnType<typeof createApp>;
+
+  afterEach(() => {
+    if (app) closeSidecarApp(app);
+    if (dataDir) rmSync(dataDir, { recursive: true, force: true });
+  });
+
+  it('POST/GET companies with objective and department', async () => {
+    dataDir = mkdtempSync(join(tmpdir(), 'operon-sidecar-'));
+    app = createApp({ dataDir });
+
+    const created = await request(app)
+      .post('/api/v1/companies')
+      .send({ name: 'Wizard Co' });
+    expect(created.status).toBe(201);
+    expect(created.body.name).toBe('Wizard Co');
+
+    const dup = await request(app)
+      .post('/api/v1/companies')
+      .send({ name: 'Wizard Co' });
+    expect(dup.status).toBe(400);
+    expect(dup.body.error).toMatch(/DR-M01-01/);
+
+    const dept = await request(app)
+      .post(`/api/v1/companies/${created.body.id}/departments`)
+      .send({ name: 'Product' });
+    expect(dept.status).toBe(201);
+
+    const obj = await request(app)
+      .post(`/api/v1/companies/${created.body.id}/objectives`)
+      .send({ title: 'Launch first product line' });
+    expect(obj.status).toBe(201);
+    expect(obj.body.status).toBe('draft');
+
+    const list = await request(app).get('/api/v1/companies');
+    expect(list.body.some((c: { name: string }) => c.name === 'Wizard Co')).toBe(true);
+
+    const detail = await request(app).get(`/api/v1/companies/${created.body.id}`);
+    expect(detail.body.localPath).toMatch(/^companies\//);
+  });
+
+  it('rejects invalid objective title', async () => {
+    dataDir = mkdtempSync(join(tmpdir(), 'operon-sidecar-'));
+    app = createApp({ dataDir });
+
+    const created = await request(app)
+      .post('/api/v1/companies')
+      .send({ name: 'Test Co' });
+
+    const obj = await request(app)
+      .post(`/api/v1/companies/${created.body.id}/objectives`)
+      .send({ title: 'Hi' });
+    expect(obj.status).toBe(400);
+    expect(obj.body.error).toMatch(/CO-01/);
+  });
+});

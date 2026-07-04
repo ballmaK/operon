@@ -5,13 +5,14 @@ import type { Company } from '@operon/shared-types';
 export class CompanyRepo {
   constructor(private readonly db: Database.Database) {}
 
-  create(input: { name: string; localPath: string }): Company {
+  create(input: { name: string; localPath?: string }): Company {
     const now = new Date().toISOString();
+    const id = randomUUID();
     const company: Company = {
-      id: randomUUID(),
+      id,
       name: input.name,
       status: 'active',
-      localPath: input.localPath,
+      localPath: input.localPath ?? `companies/${id}`,
       createdAt: now,
       updatedAt: now,
     };
@@ -43,5 +44,15 @@ export class CompanyRepo {
          FROM companies ORDER BY created_at DESC`,
       )
       .all() as Company[];
+  }
+
+  findByName(name: string): Company | null {
+    const row = this.db
+      .prepare(
+        `SELECT id, name, status, local_path AS localPath, created_at AS createdAt, updated_at AS updatedAt
+         FROM companies WHERE name = ? COLLATE NOCASE`,
+      )
+      .get(name.trim()) as Company | undefined;
+    return row ?? null;
   }
 }

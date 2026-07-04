@@ -11,6 +11,9 @@ import {
   SandboxManager,
   bootstrapAuth,
   buildOperonServices,
+  CompanyRepo,
+  DepartmentRepo,
+  ObjectiveRepo,
 } from '@operon/db';
 import { OPERON_VERSION, type HealthResponse } from '@operon/shared-types';
 import { mkdtempSync } from 'node:fs';
@@ -25,6 +28,7 @@ import { sandboxRouter } from './routes/sandbox.js';
 import { workersRouter } from './routes/workers.js';
 import { leadsRouter } from './routes/leads.js';
 import { controlLoopsRouter } from './routes/control-loops.js';
+import { companiesRouter } from './routes/companies.js';
 
 export interface SidecarOptions {
   dataDir?: string;
@@ -52,6 +56,9 @@ export function createApp(options: SidecarOptions = {}): Express {
   const modelRouter = new ModelRouter(modelConfigs, credentials);
   const sandbox = new SandboxManager(dataDir);
   const services = buildOperonServices(db, dataDir);
+  const companies = new CompanyRepo(db);
+  const departments = new DepartmentRepo(db);
+  const objectives = new ObjectiveRepo(db);
 
   app.locals.db = db;
   app.locals.sidecar = { dataDir, ownerId } satisfies SidecarContext;
@@ -69,6 +76,7 @@ export function createApp(options: SidecarOptions = {}): Express {
   });
 
   app.use('/api/v1/credentials', credentialsRouter(credentials));
+  app.use('/api/v1', companiesRouter({ companies, departments, objectives, transcripts, dataDir }));
   app.use('/api/v1/approvals', approvalsRouter(approvals, transcripts));
   app.use('/api/v1/model-configs', modelConfigsRouter(modelConfigs));
   app.use('/api/v1/skills', skillsRouter());
