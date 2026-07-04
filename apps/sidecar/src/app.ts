@@ -14,6 +14,10 @@ import {
   CompanyRepo,
   DepartmentRepo,
   ObjectiveRepo,
+  TaskRepo,
+  WorkerRunRepo,
+  listAssetsForCompany,
+  listProofsForCompany,
 } from '@operon/db';
 import { OPERON_VERSION, type HealthResponse } from '@operon/shared-types';
 import { mkdtempSync } from 'node:fs';
@@ -30,6 +34,8 @@ import { leadsRouter } from './routes/leads.js';
 import { controlLoopsRouter } from './routes/control-loops.js';
 import { companiesRouter } from './routes/companies.js';
 import { objectivesRouter } from './routes/objectives.js';
+import { tasksRouter } from './routes/tasks.js';
+import { proofsRouter } from './routes/proofs.js';
 
 export interface SidecarOptions {
   dataDir?: string;
@@ -60,6 +66,8 @@ export function createApp(options: SidecarOptions = {}): Express {
   const companies = new CompanyRepo(db);
   const departments = new DepartmentRepo(db);
   const objectives = new ObjectiveRepo(db);
+  const tasks = new TaskRepo(db);
+  const workerRuns = new WorkerRunRepo(db);
 
   app.locals.db = db;
   app.locals.sidecar = { dataDir, ownerId } satisfies SidecarContext;
@@ -77,7 +85,7 @@ export function createApp(options: SidecarOptions = {}): Express {
   });
 
   app.use('/api/v1/credentials', credentialsRouter(credentials));
-  app.use('/api/v1', companiesRouter({ companies, departments, objectives, transcripts, dataDir }));
+  app.use('/api/v1', companiesRouter({ companies, departments, objectives, tasks, transcripts, dataDir }));
   app.use(
     '/api/v1',
     objectivesRouter({
@@ -87,6 +95,21 @@ export function createApp(options: SidecarOptions = {}): Express {
       transcripts,
     }),
   );
+  app.use(
+    '/api/v1',
+    tasksRouter({
+      departments,
+      tasks,
+      runs: workerRuns,
+      workers: services.worker,
+    }),
+  );
+  app.use('/api/v1', proofsRouter({
+    listProofs: (companyId) => listProofsForCompany(db, companyId),
+    listAssets: (companyId) => listAssetsForCompany(db, companyId),
+    transcripts,
+    dataDir,
+  }));
   app.use('/api/v1/approvals', approvalsRouter(approvals, transcripts));
   app.use('/api/v1/model-configs', modelConfigsRouter(modelConfigs));
   app.use('/api/v1/skills', skillsRouter());

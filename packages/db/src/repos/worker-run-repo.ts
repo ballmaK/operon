@@ -47,6 +47,13 @@ export class WorkerRunRepo {
     );
   }
 
+  listByTask(taskId: string): WorkerRun[] {
+    const rows = this.db
+      .prepare(`SELECT * FROM worker_runs WHERE task_id = ? ORDER BY created_at DESC`)
+      .all(taskId) as Row[];
+    return rows.map((r) => this.mapRow(r)!);
+  }
+
   updateStatus(id: string, status: WorkerStatus, proof?: Proof | null): void {
     const now = new Date().toISOString();
     this.db

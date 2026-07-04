@@ -1,15 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { Company, Department, Objective, TranscriptEntry } from '@operon/shared-types';
+import type { Company, Objective, TranscriptEntry } from '@operon/shared-types';
 import {
   listDepartments,
   listObjectives,
   listPendingApprovals,
   listTranscripts,
+  type DepartmentWithStats,
 } from '../lib/sidecar-api';
 
 export interface ControlRoomData {
   objectives: Objective[];
-  departments: Department[];
+  departments: DepartmentWithStats[];
   transcripts: TranscriptEntry[];
   pendingApprovals: number;
 }
@@ -35,7 +36,7 @@ export function useControlRoom(port: number | null, company: Company | null) {
       const [objectives, departments, transcripts, approvals] = await Promise.all([
         listObjectives(port, company.id),
         listDepartments(port, company.id),
-        listTranscripts(port, company.id, 5),
+        listTranscripts(port, company.id, { limit: 5 }),
         listPendingApprovals(port),
       ]);
       setData({

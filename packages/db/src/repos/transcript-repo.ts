@@ -45,17 +45,40 @@ export class TranscriptRepo {
   }
 
   query(companyId: string, limit = 50): TranscriptEntry[] {
+    return this.queryFiltered(companyId, { limit });
+  }
+
+  queryFiltered(
+    companyId: string,
+    opts: { limit?: number; offset?: number; actor?: string; actionType?: string },
+  ): TranscriptEntry[] {
+    const limit = Math.min(opts.limit ?? 50, 200);
+    const offset = opts.offset ?? 0;
+    const conditions = ['company_id = ?'];
+    const params: unknown[] = [companyId];
+
+    if (opts.actor) {
+      conditions.push('actor = ?');
+      params.push(opts.actor);
+    }
+    if (opts.actionType) {
+      conditions.push('action_type = ?');
+      params.push(opts.actionType);
+    }
+
+    params.push(limit, offset);
+
     const rows = this.db
       .prepare(
         `SELECT id, company_id AS companyId, actor, action_type AS actionType,
                 payload_json AS payloadJson, related_entity_type AS relatedType,
                 related_entity_id AS relatedId, timestamp
          FROM transcripts
-         WHERE company_id = ?
+         WHERE ${conditions.join(' AND ')}
          ORDER BY timestamp DESC
-         LIMIT ?`,
+         LIMIT ? OFFSET ?`,
       )
-      .all(companyId, limit) as Array<{
+      .all(...params) as Array<{
       id: string;
       companyId: string;
       actor: TranscriptEntry['actor'];

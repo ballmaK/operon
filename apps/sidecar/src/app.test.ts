@@ -288,3 +288,58 @@ describe('M01 objectives CRUD API', () => {
     expect(dept.body.name).toBe('Product');
   });
 });
+
+describe('M02/M03 tasks proofs transcripts API', () => {
+  let dataDir: string;
+  let app: ReturnType<typeof createApp>;
+
+  afterEach(() => {
+    if (app) closeSidecarApp(app);
+    if (dataDir) rmSync(dataDir, { recursive: true, force: true });
+  });
+
+  it('lists department tasks and proofs after loop', async () => {
+    dataDir = mkdtempSync(join(tmpdir(), 'operon-sidecar-'));
+    app = createApp({ dataDir });
+
+    const db = app.locals.db as Parameters<typeof seedTestFixture>[0];
+    const fx = seedTestFixture(db, dataDir);
+
+    const start = await request(app)
+      .post(`/api/v1/objectives/${fx.objectiveId}/start`)
+      .send({ departmentId: fx.departmentId });
+    expect(start.status).toBe(200);
+
+    const depts = await request(app).get(`/api/v1/companies/${fx.companyId}/departments`);
+    expect(depts.body[0].activeTaskCount).toBeGreaterThanOrEqual(0);
+
+    const tasks = await request(app).get(`/api/v1/departments/${fx.departmentId}/tasks`);
+    expect(tasks.body.length).toBeGreaterThan(0);
+
+    const taskId = tasks.body[0].id as string;
+    const detail = await request(app).get(`/api/v1/tasks/${taskId}`);
+    expect(detail.body.status).toBe('done');
+
+    const runs = await request(app).get(`/api/v1/tasks/${taskId}/runs`);
+    expect(runs.body.length).toBeGreaterThan(0);
+
+    const worker = await request(app).get(`/api/v1/workers/${runs.body[0].id}`);
+    expect(worker.body.proof).toBeTruthy();
+
+    const proofs = await request(app).get(`/api/v1/companies/${fx.companyId}/proofs`);
+    expect(proofs.body.length).toBeGreaterThan(0);
+
+    const assets = await request(app).get(`/api/v1/companies/${fx.companyId}/assets`);
+    expect(assets.body.length).toBeGreaterThan(0);
+
+    const filtered = await request(app).get(
+      `/api/v1/companies/${fx.companyId}/transcripts?actor=worker&limit=10`,
+    );
+    expect(filtered.body.length).toBeGreaterThan(0);
+
+    const correction = await request(app)
+      .post('/api/v1/transcripts/correct')
+      .send({ companyId: fx.companyId, message: 'Assumption was wrong' });
+    expect(correction.status).toBe(201);
+  });
+});

@@ -1,17 +1,25 @@
 import { useState, useEffect } from 'react';
-import type { Company } from '@operon/shared-types';
+import type { Company, Task } from '@operon/shared-types';
 import { useControlRoom } from '../hooks/useControlRoom';
 import { ObjectiveCard } from './ObjectiveCard';
+import { TaskListPanel } from './TaskListPanel';
+import { WorkerExecutionPanel } from './WorkerExecutionPanel';
+import { TranscriptTimeline } from './TranscriptTimeline';
+import { ProofWall } from './ProofWall';
+import { AssetLibrary } from './AssetLibrary';
 import {
   completeObjective,
   createObjective,
   getObjective,
+  listDepartmentTasks,
   pauseObjective,
   resumeObjective,
   sendObjectiveMessage,
   startObjective,
   updateObjective,
 } from '../lib/sidecar-api';
+
+type MainView = 'room' | 'tasks' | 'transcripts' | 'proofs' | 'assets';
 
 interface ControlRoomProps {
   port: number;
@@ -30,11 +38,29 @@ export function ControlRoom({
 }: ControlRoomProps) {
   const company = companies.find((c) => c.id === selectedCompanyId) ?? companies[0] ?? null;
   const { data, loading, error, refresh } = useControlRoom(port, company);
+  const [view, setView] = useState<MainView>('room');
+  const [selectedDeptId, setSelectedDeptId] = useState<string | null>(null);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newConstraints, setNewConstraints] = useState('');
   const [loopMap, setLoopMap] = useState<Record<string, Awaited<ReturnType<typeof getObjective>>['controlLoop']>>({});
+
+  useEffect(() => {
+    if (data.departments.length > 0 && !selectedDeptId) {
+      setSelectedDeptId(data.departments[0].id);
+    }
+  }, [data.departments, selectedDeptId]);
+
+  useEffect(() => {
+    if (!selectedDeptId) {
+      setTasks([]);
+      return;
+    }
+    void listDepartmentTasks(port, selectedDeptId).then(setTasks);
+  }, [port, selectedDeptId, data.objectives]);
 
   useEffect(() => {
     if (!port || data.objectives.length === 0) return;
@@ -47,10 +73,10 @@ export function ControlRoom({
           return [obj.id, null] as const;
         }
       }),
-    ).then((entries) => {
-      setLoopMap(Object.fromEntries(entries));
-    });
+    ).then((entries) => setLoopMap(Object.fromEntries(entries)));
   }, [port, data.objectives]);
+
+  const selectedTask = tasks.find((t) => t.id === selectedTaskId) ?? null;
 
   const loadLoop = async (objectiveId: string) => {
     const detail = await getObjective(port, objectiveId);
@@ -63,6 +89,10 @@ export function ControlRoom({
       await fn();
       await refresh();
       await loadLoop(objectiveId);
+      if (selectedDeptId) {
+        const updated = await listDepartmentTasks(port, selectedDeptId);
+        setTasks(updated);
+      }
     } finally {
       setBusyId(null);
     }
@@ -88,6 +118,14 @@ export function ControlRoom({
 
   if (!company) return null;
 
+  const tabs: { id: MainView; label: string }[] = [
+    { id: 'room', label: '控制室' },
+    { id: 'tasks', label: '任务' },
+    { id: 'transcripts', label: '转录' },
+    { id: 'proofs', label: '证明墙' },
+    { id: 'assets', label: '资产库' },
+  ];
+
   return (
     <div className="control-room">
       <header className="control-room-topbar">
@@ -102,141 +140,205 @@ export function ControlRoom({
             </option>
           ))}
         </select>
-        <span className="topbar-item muted">运营节奏 · 即将推出</span>
+        <nav className="view-tabs">
+          {tabs.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              className={`view-tab ${view === t.id ? 'active' : ''}`}
+              onClick={() => setView(t.id)}
+            >
+              {t.label}
+            </button>
+          ))}
+        </nav>
         <span className="topbar-item">
           审批
           {data.pendingApprovals > 0 ? (
             <span className="approval-badge">{data.pendingApprovals}</span>
           ) : null}
         </span>
-        <span className="topbar-item muted">设置</span>
         <button type="button" className="btn-secondary btn-sm" onClick={onCreateCompany}>
           + 公司
         </button>
       </header>
 
-      <div className="control-room-body">
-        <aside className="control-room-sidebar">
-          <h2>部门</h2>
-          {data.departments.length === 0 ? (
-            <p className="hint">暂无部门</p>
-          ) : (
-            <ul className="dept-nav">
-              {data.departments.map((d) => (
-                <li key={d.id}>{d.name}</li>
-              ))}
-            </ul>
-          )}
-        </aside>
+      {view === 'room' ? (
+        <>
+          <div className="control-room-body">
+            <aside className="control-room-sidebar">
+              <h2>部门</h2>
+              {data.departments.length === 0 ? (
+                <p className="hint">暂无部门</p>
+              ) : (
+                <ul className="dept-nav">
+                  {data.departments.map((d) => (
+                    <li key={d.id}>
+                      <button
+                        type="button"
+                        className={`dept-nav-btn ${selectedDeptId === d.id ? 'active' : ''}`}
+                        onClick={() => {
+                          setSelectedDeptId(d.id);
+                          setView('tasks');
+                        }}
+                      >
+                        <span>{d.name}</span>
+                        {d.activeTaskCount > 0 ? (
+                          <span className="dept-badge">{d.activeTaskCount}</span>
+                        ) : null}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </aside>
 
-        <main className="control-room-main">
-          <section className="objectives-section">
-            <div className="section-header">
-              <h2>目标</h2>
-              <button type="button" className="btn-primary btn-sm" onClick={() => setShowCreate(!showCreate)}>
-                + 新建目标
-              </button>
-            </div>
-
-            {showCreate ? (
-              <div className="objective-create">
-                <label className="wizard-field">
-                  <span>目标标题</span>
-                  <input
-                    value={newTitle}
-                    onChange={(e) => setNewTitle(e.target.value)}
-                    placeholder="5-200 字符"
-                    maxLength={200}
-                  />
-                </label>
-                <label className="wizard-field">
-                  <span>约束（选填）</span>
-                  <textarea
-                    value={newConstraints}
-                    onChange={(e) => setNewConstraints(e.target.value)}
-                    rows={2}
-                    maxLength={2000}
-                  />
-                </label>
-                <div className="wizard-actions">
-                  <button type="button" className="btn-secondary" onClick={() => setShowCreate(false)}>
-                    取消
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-primary"
-                    disabled={busyId === 'create' || newTitle.trim().length < 5}
-                    onClick={() => void handleCreate()}
-                  >
-                    创建
+            <main className="control-room-main">
+              <section className="objectives-section">
+                <div className="section-header">
+                  <h2>目标</h2>
+                  <button type="button" className="btn-primary btn-sm" onClick={() => setShowCreate(!showCreate)}>
+                    + 新建目标
                   </button>
                 </div>
-              </div>
-            ) : null}
 
-            {loading ? <p className="hint">加载中…</p> : null}
-            {error ? <p className="error">{error}</p> : null}
+                {showCreate ? (
+                  <div className="objective-create">
+                    <label className="wizard-field">
+                      <span>目标标题</span>
+                      <input
+                        value={newTitle}
+                        onChange={(e) => setNewTitle(e.target.value)}
+                        placeholder="5-200 字符"
+                        maxLength={200}
+                      />
+                    </label>
+                    <label className="wizard-field">
+                      <span>约束（选填）</span>
+                      <textarea
+                        value={newConstraints}
+                        onChange={(e) => setNewConstraints(e.target.value)}
+                        rows={2}
+                        maxLength={2000}
+                      />
+                    </label>
+                    <div className="wizard-actions">
+                      <button type="button" className="btn-secondary" onClick={() => setShowCreate(false)}>
+                        取消
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-primary"
+                        disabled={busyId === 'create' || newTitle.trim().length < 5}
+                        onClick={() => void handleCreate()}
+                      >
+                        创建
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
 
-            <div className="objective-grid">
-              {data.objectives.map((obj) => (
-                <ObjectiveCard
-                  key={obj.id}
-                  objective={obj}
-                  controlLoop={loopMap[obj.id] ?? null}
-                  busy={busyId === obj.id}
-                  onStart={() =>
-                    void withBusy(obj.id, async () => {
-                      const deptId = data.departments[0]?.id;
-                      await startObjective(port, obj.id, deptId);
-                    })
-                  }
-                  onPause={() => void withBusy(obj.id, async () => { await pauseObjective(port, obj.id); })}
-                  onResume={() => void withBusy(obj.id, async () => { await resumeObjective(port, obj.id); })}
-                  onComplete={() => void withBusy(obj.id, async () => { await completeObjective(port, obj.id); })}
-                  onMessage={(message) =>
-                    void withBusy(obj.id, async () => {
-                      await sendObjectiveMessage(port, obj.id, message);
-                    })
-                  }
-                  onEdit={(input) =>
-                    void withBusy(obj.id, async () => {
-                      await updateObjective(port, obj.id, input);
-                    })
-                  }
-                />
+                {loading ? <p className="hint">加载中…</p> : null}
+                {error ? <p className="error">{error}</p> : null}
+
+                <div className="objective-grid">
+                  {data.objectives.map((obj) => (
+                    <ObjectiveCard
+                      key={obj.id}
+                      objective={obj}
+                      controlLoop={loopMap[obj.id] ?? null}
+                      busy={busyId === obj.id}
+                      onStart={() =>
+                        void withBusy(obj.id, async () => {
+                          const deptId = selectedDeptId ?? data.departments[0]?.id;
+                          await startObjective(port, obj.id, deptId);
+                        })
+                      }
+                      onPause={() => void withBusy(obj.id, async () => { await pauseObjective(port, obj.id); })}
+                      onResume={() => void withBusy(obj.id, async () => { await resumeObjective(port, obj.id); })}
+                      onComplete={() => void withBusy(obj.id, async () => { await completeObjective(port, obj.id); })}
+                      onMessage={(message) =>
+                        void withBusy(obj.id, async () => {
+                          await sendObjectiveMessage(port, obj.id, message);
+                        })
+                      }
+                      onEdit={(input) =>
+                        void withBusy(obj.id, async () => {
+                          await updateObjective(port, obj.id, input);
+                        })
+                      }
+                    />
+                  ))}
+                </div>
+
+                {data.objectives.length === 0 && !loading ? (
+                  <p className="hint">暂无目标，点击「新建目标」开始。</p>
+                ) : null}
+              </section>
+            </main>
+          </div>
+
+          <footer className="control-room-footer">
+            <TranscriptTimeline port={port} companyId={company.id} compact />
+          </footer>
+        </>
+      ) : null}
+
+      {view === 'tasks' ? (
+        <div className="control-room-body tasks-view">
+          <aside className="control-room-sidebar">
+            <h2>部门</h2>
+            <ul className="dept-nav">
+              {data.departments.map((d) => (
+                <li key={d.id}>
+                  <button
+                    type="button"
+                    className={`dept-nav-btn ${selectedDeptId === d.id ? 'active' : ''}`}
+                    onClick={() => {
+                      setSelectedDeptId(d.id);
+                      setSelectedTaskId(null);
+                    }}
+                  >
+                    <span>{d.name}</span>
+                    {d.activeTaskCount > 0 ? (
+                      <span className="dept-badge">{d.activeTaskCount}</span>
+                    ) : null}
+                  </button>
+                </li>
               ))}
-            </div>
+            </ul>
+          </aside>
+          <main className="control-room-main task-split">
+            <section>
+              <h2>任务列表</h2>
+              <TaskListPanel
+                tasks={tasks}
+                selectedTaskId={selectedTaskId}
+                onSelect={setSelectedTaskId}
+              />
+            </section>
+            <WorkerExecutionPanel port={port} task={selectedTask} />
+          </main>
+        </div>
+      ) : null}
 
-            {data.objectives.length === 0 && !loading ? (
-              <p className="hint">暂无目标，点击「新建目标」开始。</p>
-            ) : null}
-          </section>
+      {view === 'transcripts' ? (
+        <div className="control-room-main padded">
+          <TranscriptTimeline port={port} companyId={company.id} />
+        </div>
+      ) : null}
 
-          <section className="dept-overview">
-            <h2>部门概览</h2>
-            <p className="hint">任务与 Worker 状态将在 M02 中展示。</p>
-          </section>
-        </main>
-      </div>
+      {view === 'proofs' ? (
+        <div className="control-room-main padded">
+          <ProofWall port={port} companyId={company.id} />
+        </div>
+      ) : null}
 
-      <footer className="control-room-footer">
-        <h2>最近动态</h2>
-        {data.transcripts.length === 0 ? (
-          <p className="hint">暂无 Transcript 记录。</p>
-        ) : (
-          <ul className="transcript-snippet-list">
-            {data.transcripts.map((t) => (
-              <li key={t.id}>
-                <span className="transcript-actor">{t.actor}</span>
-                <span className="transcript-action">{t.actionType}</span>
-                <span className="transcript-time">
-                  {new Date(t.timestamp).toLocaleString()}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </footer>
+      {view === 'assets' ? (
+        <div className="control-room-main padded">
+          <AssetLibrary port={port} companyId={company.id} />
+        </div>
+      ) : null}
     </div>
   );
 }

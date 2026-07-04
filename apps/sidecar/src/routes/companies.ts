@@ -5,6 +5,7 @@ import type { CompanyRepo } from '@operon/db';
 import type { DepartmentRepo } from '@operon/db';
 import type { ObjectiveRepo } from '@operon/db';
 import type { TranscriptRepo } from '@operon/db';
+import type { TaskRepo } from '@operon/db';
 import { AUDIT_COMPANY_ID } from '@operon/db';
 import {
   validateCompanyName,
@@ -16,6 +17,7 @@ export interface CompaniesRouterDeps {
   companies: CompanyRepo;
   departments: DepartmentRepo;
   objectives: ObjectiveRepo;
+  tasks: TaskRepo;
   transcripts: TranscriptRepo;
   dataDir: string;
 }
@@ -121,7 +123,13 @@ export function companiesRouter(deps: CompaniesRouterDeps): Router {
       res.status(404).json({ error: 'Company not found' });
       return;
     }
-    res.json(deps.departments.listByCompany(company.id));
+    const departments = deps.departments.listByCompany(company.id);
+    res.json(
+      departments.map((d) => ({
+        ...d,
+        activeTaskCount: deps.tasks.countActiveByDepartment(d.id),
+      })),
+    );
   });
 
   router.get('/companies/:id/transcripts', (req: Request, res: Response) => {
@@ -130,8 +138,14 @@ export function companiesRouter(deps: CompaniesRouterDeps): Router {
       res.status(404).json({ error: 'Company not found' });
       return;
     }
-    const limit = Math.min(Number(req.query.limit) || 5, 50);
-    res.json(deps.transcripts.query(company.id, limit));
+    const limit = Math.min(Number(req.query.limit) || 5, 200);
+    const offset = Number(req.query.offset) || 0;
+    const actor = typeof req.query.actor === 'string' ? req.query.actor : undefined;
+    const actionType =
+      typeof req.query.actionType === 'string' ? req.query.actionType : undefined;
+    res.json(
+      deps.transcripts.queryFiltered(company.id, { limit, offset, actor, actionType }),
+    );
   });
 
   return router;

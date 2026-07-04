@@ -33,4 +33,15 @@ export class DepartmentRepo {
       )
       .all(companyId) as Department[];
   }
+
+  findById(id: string): Department | null {
+    const row = this.db
+      .prepare(
+        `SELECT id, company_id AS companyId, name, charter,
+                created_at AS createdAt, updated_at AS updatedAt
+         FROM departments WHERE id = ?`,
+      )
+      .get(id) as Department | undefined;
+    return row ?? null;
+  }
 }

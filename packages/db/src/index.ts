@@ -21,4 +21,5 @@ export * from './repos/department-repo.js';
 export * from './objective-status.js';
 export * from './validation/worker-input.js';
 export * from './validation/company-input.js';
+export * from './proof-query.js';
 export * from './test-fixtures.js';

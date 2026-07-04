@@ -58,6 +58,30 @@ export class TaskRepo {
     return rows.map((r) => this.mapRow(r)!);
   }
 
+  listByDepartment(departmentId: string): Task[] {
+    const rows = this.db
+      .prepare(`SELECT * FROM tasks WHERE department_id = ? ORDER BY created_at DESC`)
+      .all(departmentId) as TaskRow[];
+    return rows.map((r) => this.mapRow(r)!);
+  }
+
+  listByCompany(companyId: string): Task[] {
+    const rows = this.db
+      .prepare(`SELECT * FROM tasks WHERE company_id = ? ORDER BY created_at DESC`)
+      .all(companyId) as TaskRow[];
+    return rows.map((r) => this.mapRow(r)!);
+  }
+
+  countActiveByDepartment(departmentId: string): number {
+    const row = this.db
+      .prepare(
+        `SELECT COUNT(*) AS c FROM tasks
+         WHERE department_id = ? AND status IN ('pending', 'running', 'proof')`,
+      )
+      .get(departmentId) as { c: number };
+    return row.c;
+  }
+
   updateStatus(id: string, status: TaskStatus, workerRunId?: string | null): void {
     const now = new Date().toISOString();
     this.db

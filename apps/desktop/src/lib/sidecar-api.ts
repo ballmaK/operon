@@ -5,6 +5,10 @@ import type {
   ControlLoop,
   TranscriptEntry,
   Approval,
+  Task,
+  WorkerRun,
+  ProofWallItem,
+  AssetItem,
 } from '@operon/shared-types';
 import { SIDECAR_DEFAULT_PORT } from '@operon/shared-types';
 
@@ -50,8 +54,12 @@ export async function createDepartment(
   });
 }
 
-export async function listDepartments(port: number, companyId: string): Promise<Department[]> {
-  return requestJson<Department[]>(port, `/api/v1/companies/${companyId}/departments`);
+export interface DepartmentWithStats extends Department {
+  activeTaskCount: number;
+}
+
+export async function listDepartments(port: number, companyId: string): Promise<DepartmentWithStats[]> {
+  return requestJson<DepartmentWithStats[]>(port, `/api/v1/companies/${companyId}/departments`);
 }
 
 export async function listObjectives(port: number, companyId: string): Promise<Objective[]> {
@@ -61,12 +69,60 @@ export async function listObjectives(port: number, companyId: string): Promise<O
 export async function listTranscripts(
   port: number,
   companyId: string,
-  limit = 5,
+  opts: { limit?: number; offset?: number; actor?: string; actionType?: string } = {},
 ): Promise<TranscriptEntry[]> {
+  const params = new URLSearchParams();
+  if (opts.limit) params.set('limit', String(opts.limit));
+  if (opts.offset) params.set('offset', String(opts.offset));
+  if (opts.actor) params.set('actor', opts.actor);
+  if (opts.actionType) params.set('actionType', opts.actionType);
+  const qs = params.toString();
   return requestJson<TranscriptEntry[]>(
     port,
-    `/api/v1/companies/${companyId}/transcripts?limit=${limit}`,
+    `/api/v1/companies/${companyId}/transcripts${qs ? `?${qs}` : ''}`,
   );
+}
+
+export async function correctTranscript(
+  port: number,
+  input: { companyId: string; message: string; relatedEntity?: { type: string; id: string } },
+): Promise<TranscriptEntry> {
+  return requestJson<TranscriptEntry>(port, '/api/v1/transcripts/correct', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export async function listDepartmentTasks(port: number, departmentId: string): Promise<Task[]> {
+  return requestJson<Task[]>(port, `/api/v1/departments/${departmentId}/tasks`);
+}
+
+export async function getTask(port: number, taskId: string): Promise<Task> {
+  return requestJson<Task>(port, `/api/v1/tasks/${taskId}`);
+}
+
+export async function listTaskRuns(port: number, taskId: string): Promise<WorkerRun[]> {
+  return requestJson<WorkerRun[]>(port, `/api/v1/tasks/${taskId}/runs`);
+}
+
+export async function getWorkerRun(port: number, workerRunId: string): Promise<WorkerRun> {
+  return requestJson<WorkerRun>(port, `/api/v1/workers/${workerRunId}`);
+}
+
+export async function listProofs(port: number, companyId: string): Promise<ProofWallItem[]> {
+  return requestJson<ProofWallItem[]>(port, `/api/v1/companies/${companyId}/proofs`);
+}
+
+export async function listAssets(port: number, companyId: string): Promise<AssetItem[]> {
+  return requestJson<AssetItem[]>(port, `/api/v1/companies/${companyId}/assets`);
+}
+
+export async function getAssetContent(
+  port: number,
+  assetId: string,
+  path: string,
+): Promise<{ content: string; truncated: boolean }> {
+  return requestJson(port, `/api/v1/assets/${assetId}/content?path=${encodeURIComponent(path)}`);
 }
 
 export async function listPendingApprovals(port: number): Promise<Approval[]> {
