@@ -48,7 +48,7 @@ export function modelConfigsRouter(
     res.json(updated);
   });
 
-  router.post('/test', (req: Request, res: Response) => {
+  router.post('/test', async (req: Request, res: Response) => {
     if (!modelRouter) {
       res.status(501).json({ error: 'Model router not configured' });
       return;
@@ -59,7 +59,7 @@ export function modelConfigsRouter(
       return;
     }
     try {
-      const result = modelRouter.testConnection(role);
+      const result = await modelRouter.testConnection(role);
       res.json({
         ok: result.ok,
         role,

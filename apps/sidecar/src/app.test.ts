@@ -174,7 +174,12 @@ describe('Phase 1 M07/M06/M05 loop API', () => {
       .post(`/api/v1/objectives/${fixture.objectiveId}/loop/start`)
       .send({ departmentId: fixture.departmentId });
     expect(start.status).toBe(201);
-    expect(start.body.status).toBe('completed');
+    expect(start.body.status).toBe('waiting_owner');
+
+    const advanced = await request(app)
+      .post(`/api/v1/control-loops/${start.body.id}/advance`);
+    expect(advanced.status).toBe(200);
+    expect(advanced.body.status).toBe('completed');
 
     const get = await request(app).get(`/api/v1/objectives/${fixture.objectiveId}/loop`);
     expect(get.body.phase).toBe('decide');
@@ -325,6 +330,7 @@ describe('M02/M03 tasks proofs transcripts API', () => {
 
     const worker = await request(app).get(`/api/v1/workers/${runs.body[0].id}`);
     expect(worker.body.proof).toBeTruthy();
+    expect(worker.body.metrics?.reactSteps).toBeGreaterThanOrEqual(2);
 
     const proofs = await request(app).get(`/api/v1/companies/${fx.companyId}/proofs`);
     expect(proofs.body.length).toBeGreaterThan(0);
@@ -454,5 +460,35 @@ describe('Phase 4 — approvals, model config, OKR, sandbox skills', () => {
         params: { url: 'https://example.com' },
       });
     expect(shot.body.screenshotPath).toBe('screenshot.png');
+
+    const dockerSession = await request(app)
+      .post('/internal/sandbox/sessions')
+      .send({ runtimeType: 'docker', agentRunId: 'docker-run' });
+    expect(dockerSession.status).toBe(201);
+
+    const blocked = await request(app)
+      .post('/internal/sandbox/invoke')
+      .send({
+        sessionId: dockerSession.body.id,
+        skillCode: 'code_run',
+        agentRunId: 'docker-run',
+        params: { code: 'console.log(1)' },
+      });
+    expect(blocked.status).toBe(403);
+    expect(blocked.body.error).toMatch(/Approval required/);
+
+    const approvalId = blocked.body.approvalId as string;
+    await request(app).post(`/api/v1/approvals/${approvalId}/approve`);
+
+    const allowed = await request(app)
+      .post('/internal/sandbox/invoke')
+      .send({
+        sessionId: dockerSession.body.id,
+        skillCode: 'code_run',
+        agentRunId: 'docker-run',
+        params: { code: 'console.log(1)' },
+      });
+    expect(allowed.status).toBe(200);
+    expect(allowed.body.exitCode).toBe(0);
   });
 });

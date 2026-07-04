@@ -1,10 +1,10 @@
 import { Router, type Request, type Response } from 'express';
-import type { SandboxManager } from '@operon/db';
+import type { ApprovalRepo, SandboxManager } from '@operon/db';
+import { getSkill } from '@operon/db';
 import type { CreateSandboxSessionRequest, InvokeSkillRequest } from '@operon/shared-types';
 
-export function sandboxRouter(sandbox: SandboxManager): Router {
+export function sandboxRouter(sandbox: SandboxManager, approvals: ApprovalRepo): Router {
   const router = Router();
-  const dockerAvailable = process.env.OPERON_DOCKER_OK !== '0';
 
   router.post('/sessions', (req: Request, res: Response) => {
     try {
@@ -13,7 +13,7 @@ export function sandboxRouter(sandbox: SandboxManager): Router {
         res.status(400).json({ error: 'runtimeType and agentRunId required' });
         return;
       }
-      const session = sandbox.create(body, dockerAvailable);
+      const session = sandbox.create(body);
       res.status(201).json(session);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Sandbox error';
@@ -30,13 +30,33 @@ export function sandboxRouter(sandbox: SandboxManager): Router {
     res.status(204).send();
   });
 
-  router.post('/invoke', (req: Request, res: Response) => {
+  router.post('/invoke', async (req: Request, res: Response) => {
     try {
       const body = req.body as InvokeSkillRequest;
       if (!body.sessionId || !body.skillCode || !body.agentRunId) {
         res.status(400).json({ error: 'sessionId, skillCode, agentRunId required' });
         return;
       }
+
+      const skill = getSkill(body.skillCode);
+      if (skill?.riskLevel === 'high') {
+        const approved = approvals.findApprovedSkillInvoke(body.agentRunId);
+        if (!approved) {
+          const pending = approvals.findPendingSkillInvoke(body.agentRunId);
+          if (!pending) {
+            const created = approvals.create({
+              actionType: 'skill_invoke',
+              taskId: body.agentRunId,
+              summary: `High-risk skill: ${body.skillCode}`,
+            });
+            res.status(403).json({ error: 'Approval required (AU-01)', approvalId: created.id });
+            return;
+          }
+          res.status(403).json({ error: 'Approval pending', approvalId: pending.id });
+          return;
+        }
+      }
+
       if (body.skillCode === 'file_write') {
         const relativePath = String(body.params.relativePath ?? 'output.txt');
         const content = String(body.params.content ?? '');
@@ -46,12 +66,12 @@ export function sandboxRouter(sandbox: SandboxManager): Router {
       }
       if (body.skillCode === 'browser_screenshot') {
         const url = typeof body.params.url === 'string' ? body.params.url : undefined;
-        const result = sandbox.invokeBrowserScreenshot(body.sessionId, { url });
+        const result = await sandbox.invokeBrowserScreenshot(body.sessionId, { url });
         res.json({ skillCode: body.skillCode, ...result });
         return;
       }
       if (body.skillCode === 'code_run') {
-        const code = String(body.params.code ?? '');
+        const code = String(body.params.code ?? 'console.log("hi")');
         const language = typeof body.params.language === 'string' ? body.params.language : undefined;
         const result = sandbox.invokeCodeRun(body.sessionId, { code, language });
         res.json({ skillCode: body.skillCode, ...result });

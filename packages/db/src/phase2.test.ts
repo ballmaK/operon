@@ -7,7 +7,6 @@ import {
   closeDatabase,
   buildOperonServices,
   ControlLoopService,
-  ControlLoopRepo,
 } from './index.js';
 import { seedTestFixture } from './test-fixtures.js';
 
@@ -22,12 +21,12 @@ describe('M07/M06/M05 core loop', () => {
     dataDir = '';
   });
 
-  it('worker spawn validates brief and minimalMemory', () => {
+  it('worker spawn validates brief and minimalMemory', async () => {
     dataDir = mkdtempSync(join(tmpdir(), 'operon-loop-'));
     db = openDatabase({ dataDir });
     const fx = seedTestFixture(db, dataDir);
     const { worker, lead } = buildOperonServices(db, dataDir);
-    const tasks = lead.plan(fx.objectiveId, fx.departmentId);
+    const tasks = await lead.plan(fx.objectiveId, fx.departmentId);
 
     expect(() =>
       worker.spawn({
@@ -39,36 +38,40 @@ describe('M07/M06/M05 core loop', () => {
     ).toThrow(/3000/);
   });
 
-  it('worker ReAct stub completes with proof', () => {
+  it('worker ReAct completes with proof and metrics', async () => {
     dataDir = mkdtempSync(join(tmpdir(), 'operon-loop-'));
     db = openDatabase({ dataDir });
     const fx = seedTestFixture(db, dataDir);
     const { worker, lead } = buildOperonServices(db, dataDir);
-    const tasks = lead.plan(fx.objectiveId, fx.departmentId);
+    const tasks = await lead.plan(fx.objectiveId, fx.departmentId);
     const run = worker.spawn({
       taskId: tasks[0].id,
       brief: 'Write proof file',
       minimalMemory: 'ctx',
       allowedSkills: ['file_write'],
     });
-    const done = worker.runReactStub(run.id);
+    const done = await worker.runReact(run.id);
     expect(done.status).toBe('done');
     expect(done.proof?.type).toBe('file');
+
+    const status = worker.getStatus(run.id);
+    expect(status?.metrics?.reactSteps).toBe(2);
+    expect(status?.metrics?.llmInputTokens).toBeGreaterThan(0);
   });
 
-  it('lead synthesize appends Memory.md with backup', () => {
+  it('lead synthesize appends Memory.md with backup', async () => {
     dataDir = mkdtempSync(join(tmpdir(), 'operon-loop-'));
     db = openDatabase({ dataDir });
     const fx = seedTestFixture(db, dataDir);
     const { lead } = buildOperonServices(db, dataDir);
-    lead.plan(fx.objectiveId, fx.departmentId);
-    lead.dispatch(
-      lead.plan(fx.objectiveId, fx.departmentId)[0].id,
+    await lead.plan(fx.objectiveId, fx.departmentId);
+    await lead.dispatch(
+      (await lead.plan(fx.objectiveId, fx.departmentId))[0].id,
       'mem',
     );
-    const report = lead.synthesize(fx.objectiveId, fx.departmentId);
+    const report = await lead.synthesize(fx.objectiveId, fx.departmentId);
     expect(report.proofs.length).toBeGreaterThan(0);
-    lead.synthesize(fx.objectiveId, fx.departmentId);
+    await lead.synthesize(fx.objectiveId, fx.departmentId);
     const memPath = join(
       dataDir,
       'companies',
@@ -81,19 +84,20 @@ describe('M07/M06/M05 core loop', () => {
     expect(existsSync(`${memPath}.bak.1`)).toBe(true);
   });
 
-  it('control loop runs phases and completes (CL-01)', () => {
+  it('control loop pauses at decide until owner advances (CL-01)', async () => {
     dataDir = mkdtempSync(join(tmpdir(), 'operon-loop-'));
     db = openDatabase({ dataDir });
     const fx = seedTestFixture(db, dataDir);
     const { controlLoop } = buildOperonServices(db, dataDir);
 
-    const loop = controlLoop.start(fx.objectiveId, fx.departmentId);
-    expect(loop.status).toBe('completed');
+    const loop = await controlLoop.start(fx.objectiveId, fx.departmentId);
+    expect(loop.status).toBe('waiting_owner');
     expect(loop.phase).toBe('decide');
 
-    const loops = new ControlLoopRepo(db);
-    loops.create(fx.objectiveId, fx.companyId);
-    expect(() => controlLoop.start(fx.objectiveId, fx.departmentId)).toThrow(/CL-01/);
+    await expect(controlLoop.start(fx.objectiveId, fx.departmentId)).rejects.toThrow(/CL-01/);
+
+    const completed = controlLoop.advanceDecide(loop.id);
+    expect(completed.status).toBe('completed');
   });
 
   it('ControlLoopService.nextPhase follows six phases', () => {

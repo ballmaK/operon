@@ -23,7 +23,7 @@ export class ControlLoopService {
     private readonly keyResults: KeyResultRepo,
   ) {}
 
-  start(objectiveId: string, departmentId: string): ControlLoop {
+  async start(objectiveId: string, departmentId: string): Promise<ControlLoop> {
     const objective = this.objectives.findById(objectiveId);
     if (!objective) throw new Error('Objective not found');
 
@@ -41,11 +41,28 @@ export class ControlLoopService {
       relatedEntity: { type: 'control_loop', id: loop.id },
     });
 
-    return this.runStubPipeline(loop.id, departmentId);
+    return this.runPipeline(loop.id, departmentId);
   }
 
   getByObjective(objectiveId: string): ControlLoop | null {
     return this.loops.findByObjective(objectiveId);
+  }
+
+  advanceDecide(loopId: string): ControlLoop {
+    const loop = this.loops.findById(loopId);
+    if (!loop) throw new Error('Control loop not found');
+    if (loop.status !== 'waiting_owner' || loop.phase !== 'decide') {
+      throw new Error('Loop is not waiting for owner decision');
+    }
+    this.loops.complete(loopId);
+    this.transcripts.append({
+      companyId: loop.companyId,
+      actor: 'owner',
+      actionType: 'decision',
+      payload: { loopId, decision: 'continue' },
+      relatedEntity: { type: 'control_loop', id: loopId },
+    });
+    return this.loops.findById(loopId)!;
   }
 
   private advancePhase(loopId: string, phase: ControlLoopPhase): ControlLoop | null {
@@ -62,27 +79,26 @@ export class ControlLoopService {
     return updated;
   }
 
-  /** MVP stub: auto-run understand→decide in one call */
-  private runStubPipeline(loopId: string, departmentId: string): ControlLoop {
+  private async runPipeline(loopId: string, departmentId: string): Promise<ControlLoop> {
     let loop = this.loops.findById(loopId)!;
 
     loop = this.advancePhase(loopId, 'understand')!;
     loop = this.advancePhase(loopId, 'plan')!;
 
-    const tasks = this.lead.plan(loop.objectiveId, departmentId);
+    const tasks = await this.lead.plan(loop.objectiveId, departmentId);
     loop = this.advancePhase(loopId, 'dispatch')!;
 
     for (const task of tasks) {
-      this.lead.dispatch(task.id, 'Minimal context for worker.');
+      await this.lead.dispatch(task.id, 'Minimal context for worker.');
     }
 
     loop = this.advancePhase(loopId, 'collect')!;
     loop = this.advancePhase(loopId, 'synthesize')!;
-    this.lead.synthesize(loop.objectiveId, departmentId);
+    await this.lead.synthesize(loop.objectiveId, departmentId);
     this.keyResults.rollupFromProofs(loop.objectiveId, tasks.length);
 
     loop = this.advancePhase(loopId, 'decide')!;
-    this.loops.complete(loopId);
+    this.loops.updatePhase(loopId, 'decide', 'waiting_owner', 'Owner decision required');
 
     return this.loops.findById(loopId)!;
   }

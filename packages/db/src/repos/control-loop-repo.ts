@@ -13,7 +13,7 @@ export class ControlLoopRepo {
     const row = this.db
       .prepare(
         `SELECT * FROM control_loops
-         WHERE objective_id = ? AND status = 'running'
+         WHERE objective_id = ? AND status IN ('running', 'waiting_owner')
          ORDER BY created_at DESC LIMIT 1`,
       )
       .get(objectiveId) as Row | undefined;

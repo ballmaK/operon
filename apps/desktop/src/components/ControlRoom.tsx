@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { invoke } from '@tauri-apps/api/core';
 import type { Company, Task } from '@operon/shared-types';
 import { useControlRoom } from '../hooks/useControlRoom';
 import { ObjectiveCard } from './ObjectiveCard';
@@ -53,6 +54,10 @@ export function ControlRoom({
   const [newConstraints, setNewConstraints] = useState('');
   const [loopMap, setLoopMap] = useState<Record<string, Awaited<ReturnType<typeof getObjective>>['controlLoop']>>({});
   const [handoffCounts, setHandoffCounts] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    void invoke('set_tray_pending_count', { count: data.pendingApprovals }).catch(() => {});
+  }, [data.pendingApprovals]);
 
   useEffect(() => {
     if (!port || data.departments.length === 0) return;

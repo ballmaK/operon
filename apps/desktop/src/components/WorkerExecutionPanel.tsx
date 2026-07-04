@@ -3,14 +3,23 @@ import type { Task, WorkerRun } from '@operon/shared-types';
 import { getWorkerRun, listTaskRuns } from '../lib/sidecar-api';
 import { TASK_STATUS_LABEL, WORKER_STATUS_LABEL } from '../lib/m02-m03';
 
+interface WorkerRunWithMetrics extends WorkerRun {
+  metrics?: {
+    llmInputTokens: number;
+    llmOutputTokens: number;
+    llmCostUsd: number;
+    reactSteps: number;
+  };
+}
+
 interface WorkerExecutionPanelProps {
   port: number;
   task: Task | null;
 }
 
 export function WorkerExecutionPanel({ port, task }: WorkerExecutionPanelProps) {
-  const [runs, setRuns] = useState<WorkerRun[]>([]);
-  const [liveRun, setLiveRun] = useState<WorkerRun | null>(null);
+  const [runs, setRuns] = useState<WorkerRunWithMetrics[]>([]);
+  const [liveRun, setLiveRun] = useState<WorkerRunWithMetrics | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -69,6 +78,18 @@ export function WorkerExecutionPanel({ port, task }: WorkerExecutionPanelProps) 
             <span className="badge">{WORKER_STATUS_LABEL[active.status]}</span>
           </div>
           <p className="worker-brief">{active.brief.slice(0, 200)}</p>
+          {active.metrics ? (
+            <dl className="worker-metrics">
+              <dt>LLM Tokens</dt>
+              <dd>
+                {active.metrics.llmInputTokens} in / {active.metrics.llmOutputTokens} out
+              </dd>
+              <dt>预估成本</dt>
+              <dd>${active.metrics.llmCostUsd.toFixed(4)}</dd>
+              <dt>ReAct 步数</dt>
+              <dd>{active.metrics.reactSteps}</dd>
+            </dl>
+          ) : null}
           {active.proof ? (
             <div className="worker-proof">
               <span>Proof ({active.proof.type})</span>

@@ -76,8 +76,12 @@ Before implementing, search this document. Find existing patterns before writing
 
 ### M11 Model Router
 **PRD:** `docs/prd/modules/M11-model-router.md`
-**Code:** `apps/sidecar/`
-**Keywords:** llm, model config, routing, openai, anthropic, ollama, token cost
+**Code:** `apps/sidecar/`, `apps/desktop/` (settings UI Phase 4)
+**Keywords:** llm, model config, routing, openai, anthropic, ollama, token cost, test connection
+
+### Phase 4 — MVP Hardening & P1
+**Plan:** `specs/implementation-plans/active-plan.md` §Phase 4
+**Keywords:** approval center, api credential settings, playwright, code_run docker, multi-company switcher, key result, okr tree, proof acceptance, auto-update, asset reveal
 
 ---
 

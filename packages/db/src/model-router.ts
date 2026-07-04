@@ -5,7 +5,8 @@ import type {
 } from '@operon/shared-types';
 import type { CredentialRepo } from './repos/credential-repo.js';
 import type { ModelConfigRepo } from './repos/model-config-repo.js';
-import { estimateLlmCost, pickRoleConfig } from './model-defaults.js';
+import { estimateLlmCost } from './model-defaults.js';
+import { callOllama, callOpenAiCompatible, pingOllama } from './llm-client.js';
 
 export class ModelRouter {
   constructor(
@@ -27,14 +28,18 @@ export class ModelRouter {
     }
   }
 
-  testConnection(role: LlmCompleteRequest['role']): { ok: boolean; message: string; config: ModelConfig } {
+  async testConnection(role: LlmCompleteRequest['role']): Promise<{ ok: boolean; message: string; config: ModelConfig }> {
     const config = this.resolveConfig(role);
+    if (config.provider === 'ollama') {
+      const ok = await pingOllama(config.apiBaseUrl);
+      return {
+        ok,
+        message: ok ? 'Ollama reachable' : 'Ollama not reachable at localhost:11434',
+        config,
+      };
+    }
     this.assertCredential(config);
-    return {
-      ok: true,
-      message: config.provider === 'ollama' ? 'Ollama localhost reachable (stub)' : 'Credential present',
-      config,
-    };
+    return { ok: true, message: 'Credential present', config };
   }
 
   completeStub(request: LlmCompleteRequest): LlmCompleteResponse {
@@ -56,5 +61,28 @@ export class ModelRouter {
       estimatedCostUsd: estimateLlmCost(inputTokens, outputTokens, config),
       stub: true,
     };
+  }
+
+  /** Real HTTP when credentials/network available; stub fallback in tests or on error */
+  async complete(request: LlmCompleteRequest): Promise<LlmCompleteResponse> {
+    if (process.env.OPERON_LLM_STUB === '1') {
+      return this.completeStub(request);
+    }
+
+    const config = this.resolveConfig(request.role);
+
+    try {
+      if (config.provider === 'ollama') {
+        const ok = await pingOllama(config.apiBaseUrl);
+        if (!ok) return this.completeStub(request);
+        return await callOllama(config, request);
+      }
+
+      this.assertCredential(config);
+      const apiKey = this.credentials.getDecrypted(config.provider)!;
+      return await callOpenAiCompatible(config, apiKey, request);
+    } catch {
+      return this.completeStub(request);
+    }
   }
 }

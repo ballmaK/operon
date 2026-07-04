@@ -37,13 +37,14 @@ describe('Phase 4 — OKR, proof acceptance, sandbox', () => {
     expect(updated.status).toBe('completed');
   });
 
-  it('proof acceptance filter', () => {
+  it('proof acceptance filter', async () => {
     dataDir = mkdtempSync(join(tmpdir(), 'operon-p4-'));
     db = openDatabase({ dataDir });
     const fx = seedTestFixture(db, dataDir);
     new ObjectiveRepo(db).setStatus(fx.objectiveId, 'active');
     const { controlLoop } = buildOperonServices(db, dataDir);
-    controlLoop.start(fx.objectiveId, fx.departmentId);
+    const loop = await controlLoop.start(fx.objectiveId, fx.departmentId);
+    controlLoop.advanceDecide(loop.id);
 
     const proofs = listProofsForCompany(db, fx.companyId);
     expect(proofs.length).toBeGreaterThan(0);
@@ -52,16 +53,17 @@ describe('Phase 4 — OKR, proof acceptance, sandbox', () => {
     expect(listProofsForCompany(db, fx.companyId, { acceptanceStatus: 'accepted' })).toHaveLength(1);
   });
 
-  it('sandbox playwright and docker stubs', () => {
+  it('sandbox playwright and docker stubs', async () => {
     dataDir = mkdtempSync(join(tmpdir(), 'operon-p4-'));
     const sandbox = new SandboxManager(dataDir);
     const pw = sandbox.create({ runtimeType: 'playwright', agentRunId: 'run-1' });
-    const shot = sandbox.invokeBrowserScreenshot(pw.id, { url: 'https://example.com' });
+    const shot = await sandbox.invokeBrowserScreenshot(pw.id, { url: 'https://example.com' });
     expect(shot.screenshotPath).toBe('screenshot.png');
 
-    const dk = sandbox.create({ runtimeType: 'docker', agentRunId: 'run-2' }, true);
+    const dk = sandbox.create({ runtimeType: 'docker', agentRunId: 'run-2' });
     const out = sandbox.invokeCodeRun(dk.id, { code: 'echo hi' });
     expect(out.exitCode).toBe(0);
     expect(out.stdout).toContain('docker-stub');
+    expect(out.usedDocker).toBe(false);
   });
 });

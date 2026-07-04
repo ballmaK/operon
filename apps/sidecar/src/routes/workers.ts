@@ -15,9 +15,9 @@ export function workersRouter(workers: WorkerService): Router {
     }
   });
 
-  router.post('/:id/run-stub', (req: Request, res: Response) => {
+  router.post('/:id/run-stub', async (req: Request, res: Response) => {
     try {
-      const run = workers.runReactStub(String(req.params.id));
+      const run = await workers.runReact(String(req.params.id));
       res.json(run);
     } catch (err) {
       res.status(400).json({ error: err instanceof Error ? err.message : 'run failed' });

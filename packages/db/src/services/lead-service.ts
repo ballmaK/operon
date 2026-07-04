@@ -16,11 +16,11 @@ export class LeadService {
     private readonly modelRouter: ModelRouter,
   ) {}
 
-  plan(objectiveId: string, departmentId: string): Task[] {
+  async plan(objectiveId: string, departmentId: string): Promise<Task[]> {
     const objective = this.objectives.findById(objectiveId);
     if (!objective) throw new Error('Objective not found');
 
-    this.modelRouter.completeStub({
+    const llm = await this.modelRouter.complete({
       role: 'lead_plan',
       agentRunId: `plan-${objectiveId}`,
       messages: [
@@ -35,11 +35,12 @@ export class LeadService {
     const existing = this.tasks.listByObjective(objectiveId).filter((t) => t.status === 'pending');
     if (existing.length > 0) return existing;
 
+    const brief = llm.content.slice(0, 500) || `Deliver proof for objective: ${objective.title}`;
     const task = this.tasks.create({
       companyId: objective.companyId,
       objectiveId,
       departmentId,
-      brief: `Deliver proof for objective: ${objective.title}`.slice(0, 3000),
+      brief: brief.slice(0, 3000),
       allowedSkills: ['file_write'],
       expectedProofType: 'file',
     });
@@ -48,14 +49,14 @@ export class LeadService {
       companyId: objective.companyId,
       actor: 'lead',
       actionType: 'plan',
-      payload: { taskId: task.id, brief: task.brief },
+      payload: { taskId: task.id, brief: task.brief, llmStub: llm.stub },
       relatedEntity: { type: 'task', id: task.id },
     });
 
     return [task];
   }
 
-  dispatch(taskId: string, minimalMemory: string): { taskId: string; workerRunId: string } {
+  async dispatch(taskId: string, minimalMemory: string): Promise<{ taskId: string; workerRunId: string }> {
     const task = this.tasks.findById(taskId);
     if (!task) throw new Error('Task not found');
 
@@ -66,12 +67,12 @@ export class LeadService {
       allowedSkills: task.allowedSkills,
     });
 
-    const completed = this.workers.runReactStub(run.id);
+    const completed = await this.workers.runReact(run.id);
 
     return { taskId, workerRunId: completed.id };
   }
 
-  synthesize(objectiveId: string, departmentId: string): SynthesisReport {
+  async synthesize(objectiveId: string, departmentId: string): Promise<SynthesisReport> {
     const objective = this.objectives.findById(objectiveId);
     if (!objective) throw new Error('Objective not found');
 
@@ -82,7 +83,16 @@ export class LeadService {
       summary: t.brief,
     }));
 
-    const summary = `Synthesized ${proofs.length} proof(s) for ${objective.title}`;
+    const llm = await this.modelRouter.complete({
+      role: 'lead_synth',
+      agentRunId: `synth-${objectiveId}`,
+      messages: [
+        { role: 'system', content: 'Synthesize worker proofs into a concise summary.' },
+        { role: 'user', content: `Proofs: ${JSON.stringify(proofs)}` },
+      ],
+    });
+
+    const summary = llm.content.slice(0, 2000) || `Synthesized ${proofs.length} proof(s) for ${objective.title}`;
     const delta = `## Synthesis ${new Date().toISOString()}\n- ${summary}\n`;
     const { version } = this.memory.appendWithBackup(objective.companyId, departmentId, delta);
 
@@ -90,7 +100,7 @@ export class LeadService {
       companyId: objective.companyId,
       actor: 'lead',
       actionType: 'synthesis',
-      payload: { summary, memoryVersion: version },
+      payload: { summary, memoryVersion: version, llmStub: llm.stub },
       relatedEntity: { type: 'objective', id: objectiveId },
     });
 

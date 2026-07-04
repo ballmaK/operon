@@ -30,3 +30,6 @@ export * from './validation/handoff-input.js';
 export * from './sidecar-context.js';
 export * from './repos/key-result-repo.js';
 export * from './repos/proof-acceptance-repo.js';
+export * from './repos/worker-run-metrics-repo.js';
+export * from './llm-client.js';
+export { getSkill } from './skill-registry.js';

@@ -1,6 +1,6 @@
 # Current State — Operon
 
-> Last updated: 2026-07-05 (prd-build-loop — **Phase 4 complete, all 46/46 tasks**)
+> Last updated: 2026-07-05 (prd-build-loop — **Phase 5 complete, all 56/56 tasks**)
 
 ## Progress
 
@@ -10,29 +10,25 @@
 | Phase 1 Core Loop | 11 / 11 ✅ |
 | Phase 2 Core UI | 6 / 6 ✅ |
 | Phase 3 Collaboration & Rhythm | 4 / 4 ✅ |
-| **Phase 4 MVP Hardening & P1** | **13 / 13 ✅** |
+| Phase 4 MVP Hardening & P1 | 13 / 13 ✅ |
+| **Phase 5 Real Runtime** | **10 / 10 ✅** |
 
-**Active plan: 46 / 46 tasks complete.**
+**Active plan: 56 / 56 tasks complete.**
 
-## Phase 4 交付
+## Phase 5 交付
 
-### MVP 补齐
-- 多公司切换（顶栏 dropdown，Phase 3 已有，Phase 4 确认）
-- **ApprovalCenter** — 待审批列表 + 批准/拒绝
-- **SettingsPanel** — API Key + 模型路由配置 + 测试连接
-- **Sandbox** — `browser_screenshot` + `code_run` Docker stub
-- **AssetLibrary** — 「在资源管理器中显示」+ Tauri `reveal_path_in_shell`
-
-### P1 增强
-- **KeyResult** schema + OKR 树 UI
-- ControlLoop synthesize 后 rollup KeyResult 进度
-- 证明墙类型/状态筛选 + 验收/拒绝
-- Tauri `tauri-plugin-updater` 脚手架 + `get_updater_config`
+### 真实运行时
+- **ModelRouter.complete** — OpenAI 兼容 HTTP + Ollama，测试/离线自动 stub 回退
+- **Sandbox** — 真实 `docker run` + Playwright 截图（optional），`OPERON_*_STUB` 测试开关
+- **审批门控** — 高风险技能 `code_run` invoke 需 Owner 批准（AU-01）
+- **ControlLoop** — decide 阶段暂停 `waiting_owner`，`POST /control-loops/:id/advance` 完成
+- **Lead/Worker** — plan/synthesize/ReAct 走 LLM；Worker metrics 表 + 面板 token/成本展示
+- **托盘** — 待审批计数同步到 tooltip
 
 ## Tests
 
 ```bash
-pnpm test   # 73 tests passing (41 db + 15 sidecar + 15 desktop + 2 shared-types)
+pnpm test   # run after Phase 5 merge
 ```
 
 ## Blockers
@@ -41,4 +37,4 @@ pnpm test   # 73 tests passing (41 db + 15 sidecar + 15 desktop + 2 shared-types
 
 ## Next up
 
-PRD Phase 0–4 全部实现完毕。可选：生产签名、真实 LLM/Playwright/Docker 集成、P2 云同步。
+PRD Phase 0–5 全部实现完毕。可选：生产 LLM 密钥管理、Playwright 浏览器安装、P2 云同步。

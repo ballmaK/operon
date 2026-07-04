@@ -72,6 +72,30 @@ export class ApprovalRepo {
     return this.setStatus(id, 'rejected');
   }
 
+  findPendingSkillInvoke(taskId: string): Approval | null {
+    const row = this.db
+      .prepare(
+        `SELECT id, action_type AS actionType, task_id AS taskId, summary, status,
+                expires_at AS expiresAt, created_at AS createdAt, updated_at AS updatedAt
+         FROM approvals WHERE task_id = ? AND action_type = 'skill_invoke' AND status = 'pending'
+         ORDER BY created_at DESC LIMIT 1`,
+      )
+      .get(taskId) as Approval | undefined;
+    return row ?? null;
+  }
+
+  findApprovedSkillInvoke(taskId: string): Approval | null {
+    const row = this.db
+      .prepare(
+        `SELECT id, action_type AS actionType, task_id AS taskId, summary, status,
+                expires_at AS expiresAt, created_at AS createdAt, updated_at AS updatedAt
+         FROM approvals WHERE task_id = ? AND action_type = 'skill_invoke' AND status = 'approved'
+         ORDER BY created_at DESC LIMIT 1`,
+      )
+      .get(taskId) as Approval | undefined;
+    return row ?? null;
+  }
+
   private setStatus(id: string, status: ApprovalStatus): Approval | null {
     const current = this.findById(id);
     if (!current || current.status !== 'pending') return null;

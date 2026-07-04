@@ -129,7 +129,7 @@ export function createApp(options: SidecarOptions = {}): Express {
   app.use('/api/v1/skills', skillsRouter());
   app.use('/api/v1', controlLoopsRouter(ctx.services.controlLoop));
   app.use('/internal/llm', llmRouter(ctx.modelRouter));
-  app.use('/internal/sandbox', sandboxRouter(ctx.sandbox));
+  app.use('/internal/sandbox', sandboxRouter(ctx.sandbox, ctx.approvals));
   app.use('/internal/workers', workersRouter(ctx.services.worker));
   app.use('/internal/leads', leadsRouter(ctx.services.lead));
 

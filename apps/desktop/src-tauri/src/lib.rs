@@ -84,6 +84,20 @@ fn get_updater_config() -> serde_json::Value {
     })
 }
 
+#[tauri::command]
+fn set_tray_pending_count(app: tauri::AppHandle, count: u32) -> Result<(), String> {
+    let tray = app
+        .tray_by_id("main")
+        .ok_or_else(|| "Tray icon not found".to_string())?;
+    let tooltip = if count > 0 {
+        format!("Operon — {count} 待审批")
+    } else {
+        "Operon".to_string()
+    };
+    tray.set_tooltip(Some(&tooltip))
+        .map_err(|e| e.to_string())
+}
+
 fn setup_tray(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     let show = MenuItem::with_id(app, "show", "打开控制室", true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
@@ -94,7 +108,7 @@ fn setup_tray(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         .ok_or("Missing default window icon")?
         .clone();
 
-    TrayIconBuilder::new()
+    TrayIconBuilder::with_id("main")
         .icon(icon)
         .menu(&menu)
         .tooltip("Operon")
@@ -131,6 +145,7 @@ pub fn run() {
             retry_sidecar_start,
             reveal_path_in_shell,
             get_updater_config,
+            set_tray_pending_count,
         ])
         .setup(|app| {
             let paths = resolve_platform_paths()?;

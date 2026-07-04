@@ -4,17 +4,26 @@ import type { ControlLoopService } from '@operon/db';
 export function controlLoopsRouter(loops: ControlLoopService): Router {
   const router = Router();
 
-  router.post('/objectives/:id/loop/start', (req: Request, res: Response) => {
+  router.post('/objectives/:id/loop/start', async (req: Request, res: Response) => {
     try {
       const departmentId = (req.body as { departmentId?: string }).departmentId;
       if (!departmentId) {
         res.status(400).json({ error: 'departmentId required' });
         return;
       }
-      const loop = loops.start(String(req.params.id), departmentId);
+      const loop = await loops.start(String(req.params.id), departmentId);
       res.status(201).json(loop);
     } catch (err) {
       res.status(400).json({ error: err instanceof Error ? err.message : 'start failed' });
+    }
+  });
+
+  router.post('/control-loops/:id/advance', (req: Request, res: Response) => {
+    try {
+      const loop = loops.advanceDecide(String(req.params.id));
+      res.json(loop);
+    } catch (err) {
+      res.status(400).json({ error: err instanceof Error ? err.message : 'advance failed' });
     }
   });
 

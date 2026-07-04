@@ -10,6 +10,7 @@ import { ControlLoopRepo } from '../repos/control-loop-repo.js';
 import { ObjectiveRepo } from '../repos/objective-repo.js';
 import { MemoryRepo } from '../repos/memory-repo.js';
 import { KeyResultRepo } from '../repos/key-result-repo.js';
+import { WorkerRunMetricsRepo } from '../repos/worker-run-metrics-repo.js';
 import { WorkerService } from './worker-service.js';
 import { LeadService } from './lead-service.js';
 import { ControlLoopService } from './control-loop-service.js';
@@ -38,6 +39,7 @@ export function buildOperonServicesFromRepos(deps: OperonServiceDeps): OperonSer
   const memory = new MemoryRepo(deps.dataDir);
   const loops = new ControlLoopRepo(deps.db);
   const keyResults = new KeyResultRepo(deps.db);
+  const metrics = new WorkerRunMetricsRepo(deps.db);
 
   const companyIdForTask = (taskId: string) =>
     deps.tasks.findById(taskId)?.companyId ?? '00000000-0000-0000-0000-000000000000';
@@ -48,6 +50,8 @@ export function buildOperonServicesFromRepos(deps: OperonServiceDeps): OperonSer
     deps.sandbox,
     deps.transcripts,
     companyIdForTask,
+    metrics,
+    deps.modelRouter,
   );
   const lead = new LeadService(
     deps.objectives,

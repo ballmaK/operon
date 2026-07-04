@@ -41,6 +41,7 @@ describe('M09 SQLite schema', () => {
       'tasks',
       'transcripts',
       'users',
+      'worker_run_metrics',
       'worker_runs',
     ]);
 

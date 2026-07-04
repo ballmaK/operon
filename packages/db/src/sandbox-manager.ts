@@ -8,21 +8,17 @@ import type {
   SkillRuntime,
 } from '@operon/shared-types';
 import { getSkill } from './skill-registry.js';
-
-/** Minimal 1x1 PNG for browser_screenshot stub */
-const STUB_PNG = Buffer.from(
-  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
-  'base64',
-);
+import { dockerAvailable, runDockerCode } from './docker-runner.js';
+import { captureBrowserScreenshot } from './playwright-runner.js';
 
 export class SandboxManager {
   private readonly sessions = new Map<string, SandboxSession>();
 
   constructor(private readonly dataDir: string) {}
 
-  create(input: CreateSandboxSessionRequest, dockerAvailable = true): SandboxSession {
+  create(input: CreateSandboxSessionRequest): SandboxSession {
     if (input.runtimeType === 'docker') {
-      assertRuntimeAllowed('docker', dockerAvailable);
+      assertRuntimeAllowed('docker', dockerAvailable());
     }
 
     const id = randomUUID();
@@ -39,11 +35,7 @@ export class SandboxManager {
       createdAt: new Date().toISOString(),
     };
     this.sessions.set(id, session);
-
-    if (input.runtimeType === 'docker') {
-      session.status = 'SBX_READY';
-    }
-
+    session.status = 'SBX_READY';
     return session;
   }
 
@@ -64,45 +56,59 @@ export class SandboxManager {
     sessionId: string,
     params: { relativePath: string; content: string },
   ): { writtenPath: string; bytes: number } {
-    const session = this.requireReadySession(sessionId, ['subprocess']);
-    const skill = getSkill('file_write');
-    if (!skill) throw new Error('file_write skill not registered');
-
+    const session = this.requireReadySession(sessionId, ['subprocess', 'playwright', 'docker']);
     session.status = 'SBX_RUNNING';
     const safeRelative = params.relativePath.replace(/^(\.\.(\/|\\|$))+/, '');
     const absPath = join(this.dataDir, session.workDirRelative, safeRelative);
     writeFileSync(absPath, params.content, 'utf8');
     session.status = 'SBX_READY';
-
     return { writtenPath: safeRelative, bytes: Buffer.byteLength(params.content, 'utf8') };
   }
 
-  invokeBrowserScreenshot(
+  async invokeBrowserScreenshot(
     sessionId: string,
     params: { url?: string },
-  ): { screenshotPath: string; url: string } {
+  ): Promise<{ screenshotPath: string; url: string; usedPlaywright: boolean }> {
     const session = this.requireReadySession(sessionId, ['playwright']);
     session.status = 'SBX_RUNNING';
-    const url = params.url ?? 'about:blank';
-    const screenshotPath = 'screenshot.png';
-    const absPath = join(this.dataDir, session.workDirRelative, screenshotPath);
-    writeFileSync(absPath, STUB_PNG);
+    const url = params.url ?? 'https://example.com';
+    const absDir = join(this.dataDir, session.workDirRelative);
+    const { screenshotPath, usedPlaywright } = await captureBrowserScreenshot(absDir, url);
     session.status = 'SBX_READY';
-    return { screenshotPath, url };
+    return { screenshotPath, url, usedPlaywright };
   }
 
   invokeCodeRun(
     sessionId: string,
     params: { code: string; language?: string },
-  ): { stdout: string; exitCode: number; outputPath: string } {
+  ): { stdout: string; exitCode: number; outputPath: string; usedDocker: boolean } {
     const session = this.requireReadySession(sessionId, ['docker']);
     session.status = 'SBX_RUNNING';
     const outputPath = 'code_run_output.txt';
-    const absPath = join(this.dataDir, session.workDirRelative, outputPath);
-    const stdout = `[docker-stub] executed ${params.language ?? 'shell'} (${params.code.length} chars)`;
-    writeFileSync(absPath, stdout, 'utf8');
+    const absDir = join(this.dataDir, session.workDirRelative);
+    const absPath = join(absDir, outputPath);
+
+    let stdout: string;
+    let exitCode: number;
+    let usedDocker = false;
+
+    if (dockerAvailable() && process.env.OPERON_DOCKER_STUB !== '1') {
+      const js = params.language === 'javascript' || params.language === 'js'
+        ? params.code
+        : `console.log(${JSON.stringify(params.code)});`;
+      const result = runDockerCode(absDir, js);
+      stdout = result.stdout;
+      exitCode = result.exitCode;
+      usedDocker = true;
+      writeFileSync(absPath, stdout, 'utf8');
+    } else {
+      stdout = `[docker-stub] ${params.code.slice(0, 200)}`;
+      exitCode = 0;
+      writeFileSync(absPath, stdout, 'utf8');
+    }
+
     session.status = 'SBX_READY';
-    return { stdout, exitCode: 0, outputPath };
+    return { stdout, exitCode, outputPath, usedDocker };
   }
 
   private requireReadySession(sessionId: string, allowed: SkillRuntime[]): SandboxSession {
@@ -119,9 +125,11 @@ export class SandboxManager {
 
 export function assertRuntimeAllowed(
   runtime: SkillRuntime,
-  dockerAvailable: boolean,
+  dockerAvailableFlag: boolean,
 ): void {
-  if (runtime === 'docker' && !dockerAvailable) {
+  if (runtime === 'docker' && !dockerAvailableFlag) {
     throw new Error('Docker required for docker runtime (SB-03)');
   }
 }
+
+export { dockerAvailable };

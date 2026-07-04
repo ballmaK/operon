@@ -64,7 +64,7 @@ export function objectivesRouter(deps: ObjectivesRouterDeps): Router {
     }
   });
 
-  router.post('/objectives/:id/start', (req: Request, res: Response) => {
+  router.post('/objectives/:id/start', async (req: Request, res: Response) => {
     const id = String(req.params.id);
     const objective = findObjectiveOr404(deps.objectives, id, res);
     if (!objective) return;
@@ -96,7 +96,7 @@ export function objectivesRouter(deps: ObjectivesRouterDeps): Router {
     });
 
     try {
-      const loop = deps.controlLoop.start(id, departmentId);
+      const loop = await deps.controlLoop.start(id, departmentId);
       res.json({ objective: deps.objectives.findById(id), loop });
     } catch (err) {
       res.status(400).json({ error: err instanceof Error ? err.message : 'start failed' });

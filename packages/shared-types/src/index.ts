@@ -221,6 +221,14 @@ export interface Task {
   updatedAt: string;
 }
 
+export interface WorkerRunMetrics {
+  workerRunId: string;
+  llmInputTokens: number;
+  llmOutputTokens: number;
+  llmCostUsd: number;
+  reactSteps: number;
+}
+
 export interface WorkerRun {
   id: string;
   taskId: string;
@@ -232,6 +240,7 @@ export interface WorkerRun {
   proof: Proof | null;
   createdAt: string;
   updatedAt: string;
+  metrics?: WorkerRunMetrics;
 }
 
 export interface SpawnWorkerRequest {
