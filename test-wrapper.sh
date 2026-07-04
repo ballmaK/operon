@@ -1,6 +1,6 @@
 #!/bin/bash
 # Minimal test output for Ralph loop (token budget)
-TEST_COMMAND="${TEST_COMMAND:-echo '⚠️  Set TEST_COMMAND in .env or test-wrapper.sh'}"
+TEST_COMMAND="${TEST_COMMAND:-pnpm test}"
 
 RESULT=$($TEST_COMMAND 2>&1)
 EXIT_CODE=$?

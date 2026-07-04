@@ -21,7 +21,7 @@ Before implementing, search this document. Find existing patterns before writing
 
 ### M12 Platform Shell (Tauri 2)
 **PRD:** `docs/prd/modules/M12-platform-shell.md`
-**Code:** `apps/desktop/`
+**Code:** `apps/desktop/`, `apps/desktop/src-tauri/`
 **Keywords:** tauri, sidecar, tray, system tray, windows, cross-platform, app config, docker check, health, localhost, DATA_DIR, APPDATA
 
 ### M09 Data Persistence
@@ -55,6 +55,29 @@ Before implementing, search this document. Find existing patterns before writing
 **PRD:** `docs/prd/modules/M01-company-workspace.md`
 **Code:** `apps/desktop/`
 **Keywords:** company, objective, control room, workspace, owner input
+
+### M02 Department & Task
+**PRD:** `docs/prd/modules/M02-department-task.md`
+**Code:** `apps/desktop/`
+**Keywords:** department, task, worker status, dispatch, live execution
+
+### M03 Transcript & Proof
+**PRD:** `docs/prd/modules/M03-transcript-proof.md`
+**Code:** `apps/desktop/`
+**Keywords:** transcript, proof, asset, timeline, screenshot, audit
+
+### M04 Rhythm
+**PRD:** `docs/prd/modules/M04-rhythm.md`
+**Keywords:** rhythm, daily review, weekly review, blockers, scheduler
+
+### M08 Handoff
+**PRD:** `docs/prd/modules/M08-handoff.md`
+**Keywords:** handoff, cross-lead, transfer, summary, assets, request
+
+### M11 Model Router
+**PRD:** `docs/prd/modules/M11-model-router.md`
+**Code:** `apps/sidecar/`
+**Keywords:** llm, model config, routing, openai, anthropic, ollama, token cost
 
 ---
 

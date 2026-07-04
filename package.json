@@ -1,0 +1,15 @@
+{
+  "name": "operon",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Operon — Windows-first cross-platform Agent company desktop app",
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "build": "pnpm --filter @operon/shared-types build && pnpm --filter @operon/db build && pnpm --filter @operon/sidecar build && pnpm --filter @operon/desktop build",
+    "test": "pnpm build && pnpm -r test",
+    "dev:sidecar": "pnpm --filter @operon/sidecar dev"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
