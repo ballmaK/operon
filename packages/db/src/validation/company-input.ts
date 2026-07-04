@@ -1,8 +1,18 @@
-export const COMPANY_NAME_MIN = 2;
-export const COMPANY_NAME_MAX = 80;
-export const OBJECTIVE_TITLE_MIN = 5;
-export const OBJECTIVE_TITLE_MAX = 200;
-export const OBJECTIVE_CONSTRAINTS_MAX = 2000;
+import {
+  COMPANY_NAME_MIN,
+  COMPANY_NAME_MAX,
+  OBJECTIVE_TITLE_MIN,
+  OBJECTIVE_TITLE_MAX,
+  OBJECTIVE_CONSTRAINTS_MAX,
+} from '@operon/shared-types';
+
+export {
+  COMPANY_NAME_MIN,
+  COMPANY_NAME_MAX,
+  OBJECTIVE_TITLE_MIN,
+  OBJECTIVE_TITLE_MAX,
+  OBJECTIVE_CONSTRAINTS_MAX,
+};
 
 export function validateCompanyName(name: unknown): string {
   if (typeof name !== 'string') throw new Error('公司名称必填');

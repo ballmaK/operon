@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { DepartmentWithStats } from '../lib/sidecar-api';
+import type { DepartmentSummary } from '@operon/shared-types';
 import type { Handoff } from '@operon/shared-types';
 import {
   acceptHandoff,
@@ -13,7 +13,7 @@ import {
 interface HandoffPanelProps {
   port: number;
   companyId: string;
-  departments: DepartmentWithStats[];
+  departments: DepartmentSummary[];
   selectedDepartmentId: string | null;
   onPendingChange?: () => void;
 }
@@ -170,7 +170,7 @@ export function HandoffPanel({
 
 export async function fetchDeptHandoffCounts(
   port: number,
-  departments: DepartmentWithStats[],
+  departments: DepartmentSummary[],
 ): Promise<Record<string, number>> {
   const entries = await Promise.all(
     departments.map(async (d) => [d.id, await getHandoffPendingCount(port, d.id)] as const),

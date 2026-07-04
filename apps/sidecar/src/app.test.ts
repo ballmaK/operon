@@ -2,7 +2,7 @@ import { describe, expect, it, afterEach } from 'vitest';
 import request from 'supertest';
 import { createApp, closeSidecarApp } from './app.js';
 import { OPERON_VERSION } from '@operon/shared-types';
-import { seedTestFixture } from '@operon/db';
+import { seedTestFixture } from '@operon/db/testing';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';

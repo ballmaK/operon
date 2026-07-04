@@ -2,27 +2,9 @@ import express, { type Express } from 'express';
 import {
   openDatabase,
   closeDatabase,
-  CredentialRepo,
-  ApprovalRepo,
-  TranscriptRepo,
-  UserRepo,
-  ModelConfigRepo,
-  ModelRouter,
-  SandboxManager,
   bootstrapAuth,
-  buildOperonServices,
-  CompanyRepo,
-  DepartmentRepo,
-  ObjectiveRepo,
-  TaskRepo,
-  WorkerRunRepo,
-  listAssetsForCompany,
-  listProofsForCompany,
-  HandoffRepo,
-  BlockerRepo,
-  RhythmScheduleRepo,
-  RhythmReportRepo,
-  RhythmService,
+  buildSidecarContext,
+  shouldRunDailyReview,
 } from '@operon/db';
 import { OPERON_VERSION, type HealthResponse } from '@operon/shared-types';
 import { mkdtempSync } from 'node:fs';
@@ -43,7 +25,6 @@ import { tasksRouter } from './routes/tasks.js';
 import { proofsRouter } from './routes/proofs.js';
 import { handoffsRouter } from './routes/handoffs.js';
 import { rhythmRouter } from './routes/rhythm.js';
-import { shouldRunDailyReview } from '@operon/db';
 
 export interface SidecarOptions {
   dataDir?: string;
@@ -62,45 +43,17 @@ export function createApp(options: SidecarOptions = {}): Express {
     options.dataDir ?? mkdtempSync(join(tmpdir(), 'operon-sidecar-'));
   const db = openDatabase({ dataDir });
   const { ownerId } = bootstrapAuth(db);
-
-  const credentials = new CredentialRepo(db, dataDir);
-  const approvals = new ApprovalRepo(db);
-  const transcripts = new TranscriptRepo(db);
-  const users = new UserRepo(db);
-  const modelConfigs = new ModelConfigRepo(db);
-  const modelRouter = new ModelRouter(modelConfigs, credentials);
-  const sandbox = new SandboxManager(dataDir);
-  const services = buildOperonServices(db, dataDir);
-  const companies = new CompanyRepo(db);
-  const departments = new DepartmentRepo(db);
-  const objectives = new ObjectiveRepo(db);
-  const tasks = new TaskRepo(db);
-  const workerRuns = new WorkerRunRepo(db);
-  const handoffs = new HandoffRepo(db);
-  const blockers = new BlockerRepo(db);
-  const rhythmSchedules = new RhythmScheduleRepo(db);
-  const rhythmReports = new RhythmReportRepo(db);
-  const rhythmService = new RhythmService(
-    db,
-    rhythmSchedules,
-    rhythmReports,
-    blockers,
-    objectives,
-    departments,
-    handoffs,
-    approvals,
-    transcripts,
-  );
+  const ctx = buildSidecarContext(db, dataDir);
 
   app.locals.db = db;
   app.locals.sidecar = { dataDir, ownerId } satisfies SidecarContext;
 
   app.locals.rhythmTimer = setInterval(() => {
-    for (const co of companies.list().filter((c) => c.status === 'active')) {
-      const schedule = rhythmSchedules.get(co.id);
+    for (const co of ctx.companies.list().filter((c) => c.status === 'active')) {
+      const schedule = ctx.rhythmSchedules.get(co.id);
       if (shouldRunDailyReview(schedule)) {
         try {
-          rhythmService.generateReport(co.id, 'daily');
+          ctx.rhythm.generateReport(co.id, 'daily');
         } catch {
           /* MVP: ignore scheduler errors */
         }
@@ -117,53 +70,66 @@ export function createApp(options: SidecarOptions = {}): Express {
   });
 
   app.get('/api/v1/owner', (_req, res) => {
-    res.json(users.getOwner());
+    res.json(ctx.users.getOwner());
   });
 
-  app.use('/api/v1/credentials', credentialsRouter(credentials));
-  app.use('/api/v1', companiesRouter({ companies, departments, objectives, tasks, transcripts, dataDir }));
+  app.use('/api/v1/credentials', credentialsRouter(ctx.credentials));
+  app.use(
+    '/api/v1',
+    companiesRouter({
+      companies: ctx.companies,
+      departments: ctx.departments,
+      objectives: ctx.objectives,
+      tasks: ctx.tasks,
+      transcripts: ctx.transcripts,
+      dataDir,
+    }),
+  );
   app.use(
     '/api/v1',
     objectivesRouter({
-      objectives,
-      departments,
-      controlLoop: services.controlLoop,
-      transcripts,
+      objectives: ctx.objectives,
+      departments: ctx.departments,
+      controlLoop: ctx.services.controlLoop,
+      transcripts: ctx.transcripts,
     }),
   );
   app.use(
     '/api/v1',
     tasksRouter({
-      departments,
-      tasks,
-      runs: workerRuns,
-      workers: services.worker,
+      departments: ctx.departments,
+      tasks: ctx.tasks,
+      runs: ctx.workerRuns,
+      workers: ctx.services.worker,
     }),
   );
-  app.use('/api/v1', proofsRouter({
-    listProofs: (companyId) => listProofsForCompany(db, companyId),
-    listAssets: (companyId) => listAssetsForCompany(db, companyId),
-    transcripts,
-    dataDir,
-  }));
-  app.use('/api/v1', handoffsRouter({ handoffs, departments, transcripts }));
+  app.use(
+    '/api/v1',
+    proofsRouter({
+      listProofs: ctx.listProofs,
+      listAssets: ctx.listAssets,
+      transcripts: ctx.transcripts,
+      dataDir,
+    }),
+  );
+  app.use('/api/v1', handoffsRouter({ handoffs: ctx.handoffs, departments: ctx.departments, transcripts: ctx.transcripts }));
   app.use(
     '/api/v1',
     rhythmRouter({
-      schedules: rhythmSchedules,
-      reports: rhythmReports,
-      blockers,
-      rhythm: rhythmService,
+      schedules: ctx.rhythmSchedules,
+      reports: ctx.rhythmReports,
+      blockers: ctx.blockers,
+      rhythm: ctx.rhythm,
     }),
   );
-  app.use('/api/v1/approvals', approvalsRouter(approvals, transcripts));
-  app.use('/api/v1/model-configs', modelConfigsRouter(modelConfigs));
+  app.use('/api/v1/approvals', approvalsRouter(ctx.approvals, ctx.transcripts));
+  app.use('/api/v1/model-configs', modelConfigsRouter(ctx.modelConfigs));
   app.use('/api/v1/skills', skillsRouter());
-  app.use('/api/v1', controlLoopsRouter(services.controlLoop));
-  app.use('/internal/llm', llmRouter(modelRouter));
-  app.use('/internal/sandbox', sandboxRouter(sandbox));
-  app.use('/internal/workers', workersRouter(services.worker));
-  app.use('/internal/leads', leadsRouter(services.lead));
+  app.use('/api/v1', controlLoopsRouter(ctx.services.controlLoop));
+  app.use('/internal/llm', llmRouter(ctx.modelRouter));
+  app.use('/internal/sandbox', sandboxRouter(ctx.sandbox));
+  app.use('/internal/workers', workersRouter(ctx.services.worker));
+  app.use('/internal/leads', leadsRouter(ctx.services.lead));
 
   return app;
 }

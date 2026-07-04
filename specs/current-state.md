@@ -40,8 +40,8 @@ pnpm test   # 67 tests passing (38 db + 14 sidecar + 15 desktop)
 All planned tasks from `docs/prd/README.md` Phase 0→3 are implemented.
 
 Suggested follow-ups:
-- **`improve-codebase-architecture`** — architecture review pass
 - Phase 4+ modules from PRD (if any) or production hardening
+- See `specs/architecture-review.md` for remaining opportunities (ControlRoom split, bulk API, HTTP auth)
 
 ## Blockers
 

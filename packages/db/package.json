@@ -9,6 +9,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./testing": {
+      "types": "./dist/test-fixtures.d.ts",
+      "import": "./dist/test-fixtures.js"
     }
   },
   "scripts": {

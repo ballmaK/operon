@@ -14,6 +14,7 @@ import type {
   Blocker,
   RhythmSchedule,
   RhythmReport,
+  DepartmentSummary,
 } from '@operon/shared-types';
 import { SIDECAR_DEFAULT_PORT } from '@operon/shared-types';
 
@@ -59,12 +60,8 @@ export async function createDepartment(
   });
 }
 
-export interface DepartmentWithStats extends Department {
-  activeTaskCount: number;
-}
-
-export async function listDepartments(port: number, companyId: string): Promise<DepartmentWithStats[]> {
-  return requestJson<DepartmentWithStats[]>(port, `/api/v1/companies/${companyId}/departments`);
+export async function listDepartments(port: number, companyId: string): Promise<DepartmentSummary[]> {
+  return requestJson<DepartmentSummary[]>(port, `/api/v1/companies/${companyId}/departments`);
 }
 
 export async function listObjectives(port: number, companyId: string): Promise<Objective[]> {
@@ -131,8 +128,7 @@ export async function getAssetContent(
 }
 
 export async function listPendingApprovals(port: number): Promise<Approval[]> {
-  const all = await requestJson<Approval[]>(port, '/api/v1/approvals');
-  return all.filter((a) => a.status === 'pending');
+  return requestJson<Approval[]>(port, '/api/v1/approvals?status=pending');
 }
 
 export async function getObjective(

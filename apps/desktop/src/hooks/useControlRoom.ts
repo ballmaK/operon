@@ -1,16 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { Company, Objective, TranscriptEntry } from '@operon/shared-types';
+import type { Company, Objective, TranscriptEntry, DepartmentSummary } from '@operon/shared-types';
 import {
   listDepartments,
   listObjectives,
   listPendingApprovals,
   listTranscripts,
-  type DepartmentWithStats,
 } from '../lib/sidecar-api';
 
 export interface ControlRoomData {
   objectives: Objective[];
-  departments: DepartmentWithStats[];
+  departments: DepartmentSummary[];
   transcripts: TranscriptEntry[];
   pendingApprovals: number;
 }

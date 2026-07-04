@@ -8,8 +8,8 @@ import {
   buildOperonServices,
   ControlLoopService,
   ControlLoopRepo,
-  seedTestFixture,
 } from './index.js';
+import { seedTestFixture } from './test-fixtures.js';
 
 describe('M07/M06/M05 core loop', () => {
   let dataDir: string;

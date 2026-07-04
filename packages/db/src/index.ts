@@ -27,4 +27,4 @@ export * from './repos/blocker-repo.js';
 export * from './repos/rhythm-repo.js';
 export * from './services/rhythm-service.js';
 export * from './validation/handoff-input.js';
-export * from './test-fixtures.js';
+export * from './sidecar-context.js';

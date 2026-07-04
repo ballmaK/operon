@@ -1,3 +1,11 @@
+import {
+  COMPANY_NAME_MIN,
+  COMPANY_NAME_MAX,
+  OBJECTIVE_TITLE_MIN,
+  OBJECTIVE_TITLE_MAX,
+  OBJECTIVE_CONSTRAINTS_MAX,
+} from '@operon/shared-types';
+
 export type WizardStep = 'company' | 'objective' | 'department' | 'confirm' | 'done';
 
 export const WIZARD_STEPS: WizardStep[] = [
@@ -39,13 +47,19 @@ export function validateWizardStep(
   switch (step) {
     case 'company': {
       const name = form.companyName.trim();
-      if (name.length < 2 || name.length > 80) return '公司名称须 2-80 字符';
+      if (name.length < COMPANY_NAME_MIN || name.length > COMPANY_NAME_MAX) {
+        return `公司名称须 ${COMPANY_NAME_MIN}-${COMPANY_NAME_MAX} 字符`;
+      }
       return null;
     }
     case 'objective': {
       const title = form.objectiveTitle.trim();
-      if (title.length < 5 || title.length > 200) return '目标标题须 5-200 字符（CO-01）';
-      if (form.constraints.length > 2000) return '约束条件不超过 2000 字符';
+      if (title.length < OBJECTIVE_TITLE_MIN || title.length > OBJECTIVE_TITLE_MAX) {
+        return `目标标题须 ${OBJECTIVE_TITLE_MIN}-${OBJECTIVE_TITLE_MAX} 字符（CO-01）`;
+      }
+      if (form.constraints.length > OBJECTIVE_CONSTRAINTS_MAX) {
+        return `约束条件不超过 ${OBJECTIVE_CONSTRAINTS_MAX} 字符`;
+      }
       return null;
     }
     case 'department': {

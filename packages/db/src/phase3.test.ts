@@ -14,8 +14,8 @@ import {
   DepartmentRepo,
   ObjectiveRepo,
   TranscriptRepo,
-  seedTestFixture,
 } from './index.js';
+import { seedTestFixture } from './test-fixtures.js';
 
 describe('M08/M04 phase3', () => {
   let dataDir: string;

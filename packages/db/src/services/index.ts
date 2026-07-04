@@ -21,6 +21,46 @@ export interface OperonServices {
   controlLoop: ControlLoopService;
 }
 
+export interface OperonServiceDeps {
+  db: Database.Database;
+  dataDir: string;
+  tasks: TaskRepo;
+  transcripts: TranscriptRepo;
+  runs: WorkerRunRepo;
+  sandbox: SandboxManager;
+  modelRouter: ModelRouter;
+  objectives: ObjectiveRepo;
+}
+
+/** Build agent services from pre-instantiated repos (shared composition root) */
+export function buildOperonServicesFromRepos(deps: OperonServiceDeps): OperonServices {
+  const memory = new MemoryRepo(deps.dataDir);
+  const loops = new ControlLoopRepo(deps.db);
+
+  const companyIdForTask = (taskId: string) =>
+    deps.tasks.findById(taskId)?.companyId ?? '00000000-0000-0000-0000-000000000000';
+
+  const worker = new WorkerService(
+    deps.runs,
+    deps.tasks,
+    deps.sandbox,
+    deps.transcripts,
+    companyIdForTask,
+  );
+  const lead = new LeadService(
+    deps.objectives,
+    deps.tasks,
+    memory,
+    worker,
+    deps.transcripts,
+    deps.modelRouter,
+  );
+  const controlLoop = new ControlLoopService(loops, deps.objectives, lead, deps.transcripts);
+
+  return { worker, lead, controlLoop };
+}
+
+/** Convenience for tests — creates its own repo instances */
 export function buildOperonServices(db: Database.Database, dataDir: string): OperonServices {
   const tasks = new TaskRepo(db);
   const transcripts = new TranscriptRepo(db);
@@ -30,15 +70,15 @@ export function buildOperonServices(db: Database.Database, dataDir: string): Ope
   const modelConfigs = new ModelConfigRepo(db);
   const modelRouter = new ModelRouter(modelConfigs, credentials);
   const objectives = new ObjectiveRepo(db);
-  const memory = new MemoryRepo(dataDir);
-  const loops = new ControlLoopRepo(db);
 
-  const companyIdForTask = (taskId: string) =>
-    tasks.findById(taskId)?.companyId ?? '00000000-0000-0000-0000-000000000000';
-
-  const worker = new WorkerService(runs, tasks, sandbox, transcripts, companyIdForTask);
-  const lead = new LeadService(objectives, tasks, memory, worker, transcripts, modelRouter);
-  const controlLoop = new ControlLoopService(loops, objectives, lead, transcripts);
-
-  return { worker, lead, controlLoop };
+  return buildOperonServicesFromRepos({
+    db,
+    dataDir,
+    tasks,
+    transcripts,
+    runs,
+    sandbox,
+    modelRouter,
+    objectives,
+  });
 }
