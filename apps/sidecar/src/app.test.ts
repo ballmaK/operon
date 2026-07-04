@@ -2,6 +2,7 @@ import { describe, expect, it, afterEach } from 'vitest';
 import request from 'supertest';
 import { createApp, closeSidecarApp } from './app.js';
 import { OPERON_VERSION } from '@operon/shared-types';
+import { seedTestFixture } from '@operon/db';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -149,5 +150,33 @@ describe('Phase 1 M11/M10 APIs', () => {
 
     const del = await request(app).delete(`/internal/sandbox/sessions/${sessionId}`);
     expect(del.status).toBe(204);
+  });
+});
+
+describe('Phase 1 M07/M06/M05 loop API', () => {
+  let dataDir: string;
+  let app: ReturnType<typeof createApp>;
+  let fixture: { companyId: string; departmentId: string; objectiveId: string };
+
+  afterEach(() => {
+    if (app) closeSidecarApp(app);
+    if (dataDir) rmSync(dataDir, { recursive: true, force: true });
+  });
+
+  it('POST loop/start runs full stub pipeline', async () => {
+    dataDir = mkdtempSync(join(tmpdir(), 'operon-sidecar-'));
+    app = createApp({ dataDir });
+
+    const db = app.locals.db as Parameters<typeof seedTestFixture>[0];
+    fixture = seedTestFixture(db, dataDir);
+
+    const start = await request(app)
+      .post(`/api/v1/objectives/${fixture.objectiveId}/loop/start`)
+      .send({ departmentId: fixture.departmentId });
+    expect(start.status).toBe(201);
+    expect(start.body.status).toBe('completed');
+
+    const get = await request(app).get(`/api/v1/objectives/${fixture.objectiveId}/loop`);
+    expect(get.body.phase).toBe('decide');
   });
 });

@@ -10,6 +10,7 @@ import {
   ModelRouter,
   SandboxManager,
   bootstrapAuth,
+  buildOperonServices,
 } from '@operon/db';
 import { OPERON_VERSION, type HealthResponse } from '@operon/shared-types';
 import { mkdtempSync } from 'node:fs';
@@ -21,6 +22,9 @@ import { modelConfigsRouter } from './routes/model-configs.js';
 import { llmRouter } from './routes/llm.js';
 import { skillsRouter } from './routes/skills.js';
 import { sandboxRouter } from './routes/sandbox.js';
+import { workersRouter } from './routes/workers.js';
+import { leadsRouter } from './routes/leads.js';
+import { controlLoopsRouter } from './routes/control-loops.js';
 
 export interface SidecarOptions {
   dataDir?: string;
@@ -47,6 +51,7 @@ export function createApp(options: SidecarOptions = {}): Express {
   const modelConfigs = new ModelConfigRepo(db);
   const modelRouter = new ModelRouter(modelConfigs, credentials);
   const sandbox = new SandboxManager(dataDir);
+  const services = buildOperonServices(db, dataDir);
 
   app.locals.db = db;
   app.locals.sidecar = { dataDir, ownerId } satisfies SidecarContext;
@@ -67,8 +72,11 @@ export function createApp(options: SidecarOptions = {}): Express {
   app.use('/api/v1/approvals', approvalsRouter(approvals, transcripts));
   app.use('/api/v1/model-configs', modelConfigsRouter(modelConfigs));
   app.use('/api/v1/skills', skillsRouter());
+  app.use('/api/v1', controlLoopsRouter(services.controlLoop));
   app.use('/internal/llm', llmRouter(modelRouter));
   app.use('/internal/sandbox', sandboxRouter(sandbox));
+  app.use('/internal/workers', workersRouter(services.worker));
+  app.use('/internal/leads', leadsRouter(services.lead));
 
   return app;
 }

@@ -25,12 +25,12 @@
 - [x] M10: Skill registry — MVP skills list GET /api/v1/skills (ref: docs/prd/modules/M10-runtime-sandbox.md)
 - [x] M10: SandboxSession create/destroy lifecycle (ref: docs/prd/modules/M10-runtime-sandbox.md)
 - [x] M10: file_write skill via subprocess in company sandbox dir (ref: docs/prd/modules/M10-runtime-sandbox.md)
-- [ ] M07: WorkerAgent spawn with narrow brief + minimalMemory validation (ref: docs/prd/modules/M07-worker-agent.md)
-- [ ] M07: Worker ReAct loop stub — invoke skill → submit Proof (ref: docs/prd/modules/M07-worker-agent.md)
-- [ ] M06: Lead plan — decompose Objective into Task list (ref: docs/prd/modules/M06-lead-agent.md)
-- [ ] M06: Lead dispatch Worker + synthesize with Memory.md backup (ref: docs/prd/modules/M06-lead-agent.md)
-- [ ] M05: ControlLoop six-phase state machine (ref: docs/prd/modules/M05-control-loop.md)
-- [ ] M05: POST start control loop for active Objective (ref: docs/prd/modules/M05-control-loop.md)
+- [x] M07: WorkerAgent spawn with narrow brief + minimalMemory validation (ref: docs/prd/modules/M07-worker-agent.md)
+- [x] M07: Worker ReAct loop stub — invoke skill → submit Proof (ref: docs/prd/modules/M07-worker-agent.md)
+- [x] M06: Lead plan — decompose Objective into Task list (ref: docs/prd/modules/M06-lead-agent.md)
+- [x] M06: Lead dispatch Worker + synthesize with Memory.md backup (ref: docs/prd/modules/M06-lead-agent.md)
+- [x] M05: ControlLoop six-phase state machine (ref: docs/prd/modules/M05-control-loop.md)
+- [x] M05: POST start control loop for active Objective (ref: docs/prd/modules/M05-control-loop.md)
 
 ## Phase 2 — Core UI (M01 → M02 → M03)
 

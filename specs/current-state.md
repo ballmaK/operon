@@ -1,35 +1,56 @@
 # Current State — Operon
 
-> Last updated: 2026-07-05 (prd-build-loop session 4)
+> Last updated: 2026-07-05 (prd-build-loop session 5)
 
 ## Progress
 
 | Phase | Status |
 | ----- | ------ |
 | Phase 0 Platform | 12 / 12 ✅ |
-| **Phase 1 Core Loop** | **5 / 11** |
+| **Phase 1 Core Loop** | **11 / 11 ✅** |
 | Phase 2 Core UI | 0 / 6 |
 | Phase 3 Rhythm | 0 / 4 |
 
-## Phase 1 新增
+## Phase 1 新增（本轮 M07/M06/M05）
 
-- **M11** `model_configs` 表 + 5 角色默认路由；`GET /api/v1/model-configs`
-- **M11** `POST /internal/llm/complete` stub（MR-01 校验凭据，返回 token/成本估算）
-- **M10** `GET /api/v1/skills` — 6 个 MVP 技能
-- **M10** `POST/DELETE /internal/sandbox/sessions` 会话生命周期
-- **M10** `POST /internal/sandbox/invoke` — `file_write` 写入 `{DATA_DIR}/sandboxes/{runId}/`
+- **M07** `WorkerService.spawn` — brief ≤3000、minimalMemory ≤2KB、技能白名单校验
+- **M07** `WorkerService.runReactStub` — file_write → Proof → 销毁 sandbox
+- **M06** `LeadService.plan` — LLM stub 分解 Objective 为 Task
+- **M06** `LeadService.dispatch` + `synthesize` — 派发 Worker、Memory.md 追加与备份
+- **M05** `ControlLoopService` — 六阶段状态机 stub 流水线（understand→decide）
+- **M05** `POST /api/v1/objectives/:id/loop/start` + `GET .../loop`
+- **DB** migration `004_control_loop.sql` — tasks、worker_runs、control_loops 表
+
+## Sidecar API（Phase 1 完整）
+
+```
+GET  /health
+GET  /api/v1/owner
+GET/PUT /api/v1/credentials
+GET/POST /api/v1/approvals (+ approve/reject)
+GET  /api/v1/model-configs
+GET  /api/v1/skills
+POST /internal/llm/complete
+POST/DELETE /internal/sandbox/sessions
+POST /internal/sandbox/invoke
+POST /internal/workers/spawn
+GET  /internal/workers/:id/status
+POST /internal/leads/plan|dispatch|synthesize
+POST /api/v1/objectives/:id/loop/start
+GET  /api/v1/objectives/:id/loop
+```
 
 ## Tests
 
 ```bash
-pnpm test   # 29 tests passing
+pnpm test   # 36 tests passing
 ```
 
 ## Next up
 
-1. M07: WorkerAgent spawn + narrow brief validation
-2. M07: Worker ReAct loop stub
-3. M06: Lead plan → Task list
+1. **Phase 2** M01: Company create wizard UI
+2. M01: Objective CRUD + control room layout shell
+3. M02: Department list + Task list UI
 
 ## Blockers
 

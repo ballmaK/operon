@@ -186,3 +186,92 @@ export interface InvokeSkillRequest {
   params: Record<string, unknown>;
   agentRunId: string;
 }
+
+/** Task & Worker — M02 / M07 */
+export type TaskStatus =
+  | 'pending'
+  | 'running'
+  | 'proof'
+  | 'done'
+  | 'failed'
+  | 'cancelled';
+
+export type WorkerStatus = 'spawning' | 'running' | 'done' | 'failed';
+
+export type ProofType = 'file' | 'screenshot' | 'test' | 'url';
+
+export interface Proof {
+  type: ProofType;
+  path?: string;
+  url?: string;
+  summary: string;
+}
+
+export interface Task {
+  id: string;
+  companyId: string;
+  objectiveId: string;
+  departmentId: string;
+  brief: string;
+  allowedSkills: string[];
+  status: TaskStatus;
+  expectedProofType: ProofType;
+  workerRunId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WorkerRun {
+  id: string;
+  taskId: string;
+  brief: string;
+  minimalMemory: string;
+  allowedSkills: string[];
+  status: WorkerStatus;
+  sandboxSessionId: string | null;
+  proof: Proof | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SpawnWorkerRequest {
+  taskId: string;
+  brief: string;
+  minimalMemory: string;
+  allowedSkills: string[];
+}
+
+/** Lead — M06 */
+export interface SynthesisReport {
+  objectiveId: string;
+  taskIds: string[];
+  proofs: Proof[];
+  summary: string;
+  memoryVersion: number;
+}
+
+/** Control loop — M05 */
+export type ControlLoopPhase =
+  | 'understand'
+  | 'plan'
+  | 'dispatch'
+  | 'collect'
+  | 'synthesize'
+  | 'decide';
+
+export type ControlLoopStatus = 'running' | 'waiting_owner' | 'completed' | 'error';
+
+export interface ControlLoop {
+  id: string;
+  objectiveId: string;
+  companyId: string;
+  phase: ControlLoopPhase;
+  status: ControlLoopStatus;
+  iteration: number;
+  waitReason: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const MAX_WORKER_BRIEF_CHARS = 3000;
+export const MAX_MINIMAL_MEMORY_BYTES = 2048;

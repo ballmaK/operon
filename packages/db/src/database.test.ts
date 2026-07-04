@@ -28,11 +28,14 @@ describe('M09 SQLite schema', () => {
       'api_credentials',
       'approvals',
       'companies',
+      'control_loops',
       'departments',
       'model_configs',
       'objectives',
+      'tasks',
       'transcripts',
       'users',
+      'worker_runs',
     ]);
 
     const journalMode = db.pragma('journal_mode', { simple: true }) as string;
