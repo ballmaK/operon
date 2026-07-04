@@ -9,7 +9,7 @@
 
 | 模块编号 | M06 |
 | 模块名称 | Lead Agent 服务 |
-| 版本 | v0.1 |
+| 版本 | v0.2 |
 | 优先级 | P0 |
 
 ---
@@ -68,11 +68,23 @@
 
 | 函数 | 输入 | 输出 |
 | ---- | ---- | ---- |
-| `lead.plan(objectiveId)` | 意图+Memory | Task[] |
-| `lead.dispatch(task)` | Task | workerRunId |
-| `lead.synthesize(taskResults)` | Proof[] | SynthesisReport |
+| `lead.plan(objectiveId, departmentId)` | 意图+Memory | `Promise<Task[]>` |
+| `lead.dispatch(taskId, minimalMemory)` | Task | `Promise<{ taskId, workerRunId }>` |
+| `lead.synthesize(objectiveId, departmentId)` | Proof[] | `Promise<SynthesisReport>` |
 | `lead.readMemory(deptId)` | — | Markdown |
 | `lead.patchMemory(deptId, delta)` | 结构化 delta | version |
+
+**HTTP 路由**（Sidecar）：`POST /api/v1/leads/plan|dispatch|synthesize`
+
+---
+
+## 实现状态（Phase 5）
+
+| 能力 | 状态 | 说明 |
+| ---- | ---- | ---- |
+| plan 走 M11 `lead_plan` LLM | ✅ | brief 取自 LLM 输出 |
+| synthesize 走 M11 `lead_synth` LLM | ✅ | summary 写入 Memory.md |
+| LE-04 Memory 80KB 自动压缩 | ⏳ | 未实现 |
 
 ---
 

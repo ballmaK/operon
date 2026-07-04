@@ -83,6 +83,11 @@ Before implementing, search this document. Find existing patterns before writing
 **Plan:** `specs/implementation-plans/active-plan.md` §Phase 4
 **Keywords:** approval center, api credential settings, playwright, code_run docker, multi-company switcher, key result, okr tree, proof acceptance, auto-update, asset reveal
 
+### Phase 5 — Real Runtime
+**Plan:** `specs/implementation-plans/active-plan.md` §Phase 5
+**PRD:** `docs/prd/README.md` §Phase 5
+**Keywords:** llm complete, openai, ollama, docker run, playwright screenshot, approval gate, waiting_owner, advance decide, worker metrics, token cost, tray pending count, OPERON_LLM_STUB
+
 ---
 
 ## Conventions

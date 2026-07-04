@@ -9,7 +9,7 @@
 
 | 模块编号 | M09 |
 | 模块名称 | 数据持久层 |
-| 版本 | v0.2 |
+| 版本 | v0.3 |
 | 备注 | **MVP 纯本地**（C03）；云同步 P2 |
 | 优先级 | P0 |
 
@@ -85,6 +85,16 @@ flowchart TB
 | 数据层 | 文件路径 | 系统生成 | memories/{deptId}/Memory.md | 必填 | |
 | 数据层 | 版本 | 系统生成 | 整数 | 必填 | 写前备份 v{n} |
 
+### WorkerRunMetrics（Phase 5）
+
+| 所属模块 | 字段名称 | 字段来源 | 取值说明 | 字段说明 |
+| -------- | -------- | -------- | -------- | -------- |
+| 数据层 | Worker 运行ID | 系统生成 | worker_runs.id FK | 1:1 |
+| 数据层 | LLM 输入 Token | 系统生成 | 整数 | 累计 |
+| 数据层 | LLM 输出 Token | 系统生成 | 整数 | 累计 |
+| 数据层 | LLM 成本 USD | 系统生成 | REAL | CR-M11-01 |
+| 数据层 | ReAct 步数 | 系统生成 | 整数 | 技能调用次数 |
+
 ---
 
 ## 十一、核心规则
@@ -116,8 +126,16 @@ flowchart TB
 | AssetRepo | create, get, list, resolvePath |
 | MemoryRepo | read, writeWithBackup |
 | CompanyRepo | CRUD + 事务 |
+| WorkerRunMetricsRepo | get, upsert, addLlmUsage |
 
 ---
+
+## 实现状态（Phase 5）
+
+| 能力 | 状态 | 说明 |
+| ---- | ---- | ---- |
+| `worker_run_metrics` 表 | ✅ | `007_phase5.sql` |
+| Metrics 与 WorkerRun 1:1 | ✅ | `WorkerRunMetricsRepo` |
 
 ## 跨平台说明
 

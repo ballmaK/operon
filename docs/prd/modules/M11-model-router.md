@@ -9,7 +9,7 @@
 
 | 模块编号 | M11 |
 | 模块名称 | 模型路由 |
-| 版本 | v0.1 |
+| 版本 | v0.2 |
 | 优先级 | P0（路由）/ P1（UI 配置）
 
 ---
@@ -75,8 +75,8 @@
 | 方法 | 路径 | 说明 |
 | ---- | ---- | ---- |
 | GET/PUT | /api/v1/model-configs | 配置列表 |
-| POST | /internal/llm/complete | 内部统一补全 |
-| POST | /api/v1/model-configs/test | 测试连接 |
+| POST | /internal/llm/complete | 内部统一补全（**async**，OpenAI 兼容 / Ollama） |
+| POST | /api/v1/model-configs/test | 测试连接（**async**） |
 
 ```typescript
 interface LlmCompleteRequest {
@@ -86,6 +86,19 @@ interface LlmCompleteRequest {
   agentRunId: string;
 }
 ```
+
+---
+
+## 实现状态（Phase 5）
+
+| 能力 | 状态 | 说明 |
+| ---- | ---- | ---- |
+| OpenAI-compatible `/chat/completions` | ✅ | `packages/db/src/llm-client.ts` |
+| Ollama `/api/chat` + ping | ✅ | 同上；不可达时 stub 回退 |
+| `ModelRouter.complete()` | ✅ | 网络/凭据失败自动 stub |
+| `OPERON_LLM_STUB=1` 测试开关 | ✅ | vitest setup |
+| MR-03 5xx 指数退避 | ⏳ | 未实现 |
+| MR-02 token 预算硬限制 | ⏳ | 仅计量，未拦截 |
 
 ---
 

@@ -9,8 +9,8 @@
 
 | 模块编号 | M05 |
 | 模块名称 | 控制循环引擎 |
-| 版本 | v0.2 |
-| 备注 | OKR 拆解为 **P1**（C05）；MVP 仅 Objective 驱动 |
+| 版本 | v0.3 |
+| 备注 | OKR 拆解为 **P1**（C05）；MVP 仅 Objective 驱动；**Phase 5**：decide 暂停已实现 |
 | 优先级 | P0 |
 
 ---
@@ -32,10 +32,9 @@ stateDiagram-v2
     PLAN --> DISPATCH : Lead 计划就绪
     DISPATCH --> COLLECT : Workers 已派发
     COLLECT --> SYNTHESIZE : 全部 Proof 返回或超时
-    SYNTHESIZE --> DECIDE : 有阻塞或需审批
-    SYNTHESIZE --> PLAN : 继续下一批 Task
-    DECIDE --> PLAN : Owner 决策完成
-    DECIDE --> [*] : Objective 完成
+    SYNTHESIZE --> DECIDE : 综合完成
+    DECIDE --> [*] : Owner advance 完成
+    note right of DECIDE : waiting_owner 暂停
 ```
 
 ---
@@ -94,7 +93,7 @@ stateDiagram-v2
 
 | 编号 | 描述 | 违反处理 |
 | ---- | ---- | -------- |
-| CL-01 | 同一 Objective 同时仅 1 个 CL_RUNNING | 排队 |
+| CL-01 | 同一 Objective 同时仅 1 个 running **或** waiting_owner | 拒绝启动（CL-01） |
 | CL-02 | COLLECT 阶段最长等待 24h [待确认] | 超时标记 Task FAILED |
 | CL-03 | 每阶段切换写 Transcript | 自动 |
 | CL-04 | Owner 决策超时 7 天提醒 | M04 通知 |
@@ -116,10 +115,23 @@ stateDiagram-v2
 
 | 方法 | 路径 | 说明 |
 | ---- | ---- | ---- |
-| POST | /api/v1/objectives/{id}/loop/start | 启动循环 |
+| POST | /api/v1/objectives/{id}/loop/start | 启动循环（async，结束时 `waiting_owner`） |
 | GET | /api/v1/objectives/{id}/loop | 当前状态 |
-| POST | /api/v1/objectives/{id}/loop/pause | 暂停 |
-| POST | /api/v1/loops/{id}/decide | Owner 决策输入 |
+| POST | /api/v1/control-loops/{id}/advance | Owner 确认 decide，置 `completed` |
+| POST | /api/v1/objectives/{id}/loop/pause | 暂停（待实现） |
+
+---
+
+## 实现状态（Phase 5）
+
+| 能力 | 状态 | 代码位置 |
+| ---- | ---- | -------- |
+| 六阶段自动推进 understand→synthesize | ✅ | `packages/db/src/services/control-loop-service.ts` |
+| decide 阶段 `waiting_owner` 暂停 | ✅ | 同上 `runPipeline` |
+| `POST .../advance` 完成循环 | ✅ | `apps/sidecar/src/routes/control-loops.ts` |
+| CL-01 含 waiting_owner 互斥 | ✅ | `control-loop-repo.findRunningByObjective` |
+| KeyResult rollup（P1） | ✅ | Phase 4 |
+| loop/pause API | ⏳ | 未实现 |
 
 ---
 

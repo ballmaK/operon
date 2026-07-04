@@ -54,6 +54,12 @@ flowchart LR
     F --> D
     E -->|否| G[完成]
 
+    H[新 Phase N+1] --> I[先改 PRD 增量]
+    I --> J[用户确认]
+    J --> K[parseN / 追加 plan]
+    K --> D
+
     style B fill:#312e81,stroke:#818cf8,color:#e2e8f0
     style G fill:#14532d,stroke:#4ade80,color:#e2e8f0
+    style I fill:#7c2d12,stroke:#fb923c,color:#e2e8f0
 ```

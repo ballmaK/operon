@@ -11,7 +11,7 @@
 | ---- | ---- |
 | 模块编号 | M12 |
 | 模块名称 | 平台壳 / Platform Shell |
-| 版本 | v0.2 |
+| 版本 | v0.3 |
 | 端 | 桌面客户端（**Tauri 2**，C01 已确认） |
 | 优先级 | P0 |
 
@@ -170,12 +170,14 @@ erDiagram
 
 ### P-M12-02 系统托盘菜单
 
-| 菜单项 | 行为 |
-| ------ | ---- |
-| 打开控制室 | 显示主窗口 |
-| Sidecar 状态 | 只读展示 |
-| 暂停所有任务 | 调用 M05 API |
-| 退出 | 停止 Sidecar 并退出 |
+| 菜单项 | 行为 | 状态 |
+| ------ | ---- | ---- |
+| 打开控制室 | 显示主窗口 | ✅ |
+| 退出 | 停止 Sidecar 并退出 | ✅ |
+| Sidecar 状态 | 只读展示 | ⏳ |
+| 暂停所有任务 | 调用 M05 API | ⏳ |
+
+**Tooltip（Phase 5）**：默认 `Operon`；有待审批时显示 `Operon — N 待审批`（Tauri `set_tray_pending_count` IPC，由控制室轮询同步）。
 
 ---
 
@@ -208,3 +210,13 @@ erDiagram
 | Windows | `tray-icon` | `cmd /c` 或直接 exe | 防火墙首次弹窗 |
 | macOS | NSStatusBar | unix spawn | 公证 notarization |
 | Linux | AppIndicator | unix spawn | 桌面环境差异 |
+
+---
+
+## 实现状态（Phase 5）
+
+| 能力 | 状态 | 代码 |
+| ---- | ---- | ---- |
+| 托盘 tooltip 待审批计数 | ✅ | `lib.rs` → `set_tray_pending_count` |
+| 控制室同步 pendingApprovals | ✅ | `ControlRoom.tsx` invoke |
+| 托盘「暂停所有任务」 | ⏳ | 未实现 |

@@ -29,3 +29,5 @@ Resume:
 ```
 /prd-build-loop continue
 ```
+
+**New phase (N+1):** update `docs/prd/` first → user confirms → `parseN` or append plan → then `continue`. See `docs/prd/README.md` §新阶段扩展流程.

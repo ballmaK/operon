@@ -9,7 +9,7 @@
 
 | 模块编号 | M16 |
 | 模块名称 | 认证与审批 |
-| 版本 | v0.1 |
+| 版本 | v0.2 |
 | 优先级 | P0 |
 
 ---
@@ -113,7 +113,9 @@
 
 **前置条件**：Growth Worker 请求「发布广告」技能。
 
-**流程**：M10 拦截 → 创建 Approval → 托盘通知 → Owner 在 P-M16-01 批准 → Worker 继续。
+**流程**：M10 invoke 拦截 high 风险技能 → 403 + 创建 Approval → **托盘 tooltip 计数** → Owner 在 P-M16-01 批准 → 再次 invoke 通过。
+
+**已实现技能**：`code_run`（riskLevel=high）。
 
 **预期**：未批准前 Skill 不执行；Transcript 有记录。
 
@@ -127,3 +129,14 @@
 | POST | /api/v1/approvals/{id}/approve | 批准 |
 | POST | /api/v1/approvals/{id}/reject | 拒绝 |
 | GET/PUT | /api/v1/credentials | API Key 管理 |
+
+---
+
+## 实现状态（Phase 5）
+
+| 能力 | 状态 | 说明 |
+| ---- | ---- | ---- |
+| AU-01 high 技能 invoke 门控 | ✅ | `sandbox.ts` + `ApprovalRepo` |
+| 审批后同 agentRunId 再次 invoke | ✅ | `findApprovedSkillInvoke` |
+| 托盘待审批计数 | ✅ | 经 M12 IPC |
+| spend/deploy/email 审批类型 | ⏳ | 仅 skill_invoke |

@@ -9,8 +9,9 @@
 | 项目 | 内容 |
 | ---- | ---- |
 | 项目名称 | Operon — 跨平台 0 人 Agent 公司桌面应用 |
-| 文档版本 | v0.3 |
+| 文档版本 | v0.4 |
 | 编写日期 | 2026-07-04 |
+| 最后同步 | 2026-07-05（Phase 5 实现对照） |
 | 需求来源 | https://matrix.build/zh/guide |
 | 模块索引 | [README.md](./README.md) |
 
@@ -50,6 +51,7 @@ Matrix 官方桌面版目前 **仅支持 macOS**。Windows 用户无法使用其
 | ---- | ---- | ------ |
 | **MVP（P0）** | Tauri 2 桌面壳、**纯本地**存储、多公司工作区（无数量限制）、Objective、部门/Lead/Worker、控制循环、**Docker 必选**代码沙箱 + Playwright、Handoff、运营节奏、Owner 审批、系统托盘后台 | OKR 树、云同步、官方 Neo Harness、无 Docker 降级、Agent Wallet |
 | **P1** | **OKR 视图**、多模型配置 UI、证明墙增强、自动更新 | 自定义域名全自动 SSL |
+| **Phase 5（已实现）** | 真实 LLM HTTP（OpenAI 兼容 + Ollama）、Docker `code_run`、Playwright 截图、高风险技能审批 gate、控制循环 decide 暂停、Worker token/成本计量、托盘待审批计数 | 5xx 重试策略、Worker token 预算硬限制 |
 | **P2** | 可选云同步、**多公司配额增值**、Stripe 收款、VPTD 看板、Agent 邮箱 | 企业 SSO、等保 |
 
 ### 2.2 功能优先级（全局）
@@ -307,6 +309,7 @@ flowchart TD
 | WorkerAgent | M07 |
 | Handoff | M08 |
 | Transcript, Asset, Memory | M09 |
+| WorkerRunMetrics | M07, M09 |
 | Skill, SkillInvocation, SandboxSession | M10 |
 | ModelConfig | M11 |
 | User, Approval | M16 |
@@ -318,6 +321,7 @@ flowchart TD
 
 | 版本 | 日期 | 修改内容 |
 | ---- | ---- | -------- |
+| v0.4 | 2026-07-05 | Phase 5 实现对照：真实 LLM/沙箱/审批 gate/decide 暂停/Worker 计量 |
 | v0.3 | 2026-07-04 | 确认 C01~C05：Tauri2、Docker必选、纯本地、多公司增值后置、OKR放P1 |
 | v0.2 | 2026-07-04 | 拆分为宏观共享；定位改为 Windows 优先跨平台桌面版 |
 | v0.1 | 2026-07-04 | 单体 Web 版 PRD（已废弃） |

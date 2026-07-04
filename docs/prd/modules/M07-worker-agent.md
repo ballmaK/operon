@@ -9,7 +9,7 @@
 
 | 模块编号 | M07 |
 | 模块名称 | Worker Agent 服务 |
-| 版本 | v0.1 |
+| 版本 | v0.2 |
 | 优先级 | P0 |
 
 ---
@@ -84,8 +84,22 @@ sequenceDiagram
 | 方法 | 路径 | 说明 |
 | ---- | ---- | ---- |
 | POST | /internal/workers/spawn | M06 调用 |
-| GET | /internal/workers/{id}/status | 状态 |
-| POST | /internal/workers/{id}/cancel | 取消 |
+| GET | /api/v1/workers/{id} | 状态 + **metrics**（token/成本） |
+| POST | /internal/workers/{id}/run-stub | 触发 ReAct（内部） |
+| POST | /internal/workers/{id}/cancel | 取消（待实现） |
+
+---
+
+## 实现状态（Phase 5）
+
+| 能力 | 状态 | 说明 |
+| ---- | ---- | ---- |
+| ReAct：LLM 决策 + 最多 2 步 `file_write` | ✅ | `worker-service.runReact` |
+| `worker_run_metrics` 表 | ✅ | migration `007_phase5.sql` |
+| LLM token/成本累计 | ✅ | `WorkerRunMetricsRepo.addLlmUsage` |
+| M02 面板展示 metrics | ✅ | `WorkerExecutionPanel.tsx` |
+| WK-02 30min 超时 | ⏳ | 未实现 |
+| 多技能类型 ReAct（browser/code） | ⏳ | 当前仅 file_write |
 
 ---
 

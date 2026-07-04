@@ -77,8 +77,49 @@ graph TB
 | Phase 2 | M01 → M02 → M03 | 核心 UI 可观测 |
 | Phase 3 | M08 → M04 | 多部门协作与运营节奏 |
 | **Phase 4** | M16 → M10 → M01 → M11 → M03 → M12 | MVP 补齐（审批/沙箱）+ P1（OKR/模型 UI/证明墙/自动更新） |
+| **Phase 5** | M11 → M10 → M16 → M05 → M06 → M07 → M12 | 真实运行时（LLM HTTP、Docker/Playwright、审批 gate、decide 暂停） |
 
 ---
+
+## 实现进度（代码对照）
+
+| 阶段 | 状态 | 计划文件 |
+| ---- | ---- | -------- |
+| Phase 0–3 | ✅ 已实现 | `specs/implementation-plans/active-plan.md` |
+| Phase 4 | ✅ 已实现 | 同上 §Phase 4 |
+| **Phase 5** | ✅ 已实现 | 同上 §Phase 5 |
+| Phase 6+ | 📋 待规划 | P2 云同步、生产签名等 |
+
+> 模块 PRD 中 **「实现状态」** 小节标注各能力在代码中的落地情况；接口路径以 Sidecar 实际路由为准。
+
+---
+
+## 新阶段扩展流程（Phase N+1）
+
+**原则：先改 PRD，再写代码。** Phase 5 的教训：若先实现后补文档，接口路径、状态机与 `active-plan` 容易与 PRD 脱节。
+
+| 步骤 | 动作 | 产出 |
+| ---- | ---- | ---- |
+| 1 | 在 `00-macro-shared.md` 写清 Phase 范围与边界 | 宏观 v0.x 修订 |
+| 2 | 更新本 README 开发顺序表 + 涉及模块 PRD（接口、实体、规则） | 模块 v0.x；**实现状态** 先标「📋 计划」 |
+| 3 | `/prd-build-loop parseN` 或手动追加 `active-plan.md` §Phase N | 勾选任务列表 |
+| 4 | **用户确认 PRD diff** | — |
+| 5 | `/prd-build-loop continue` | 代码 + 测试 |
+| 6 | 实现完成后，模块 PRD **实现状态** 改为 ✅ / ⏳ | 与代码一致 |
+
+```mermaid
+flowchart LR
+    A[宏观+模块 PRD 增量] --> B[用户确认]
+    B --> C[active-plan 勾选]
+    C --> D[ralph-implement + tdd]
+    D --> E[PRD 实现状态 ✅]
+
+    style A fill:#312e81,stroke:#818cf8,color:#e2e8f0
+    style B fill:#1a3a5c,stroke:#60a5fa,color:#e2e8f0
+    style E fill:#14532d,stroke:#4ade80,color:#e2e8f0
+```
+
+**禁止：** 在未更新 PRD 的情况下直接 `continue all` 实现新 Phase。
 
 ## 跨平台技术约束（全局）
 

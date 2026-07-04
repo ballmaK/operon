@@ -102,6 +102,27 @@ Run **`to-issues`** to mirror plan into `.scratch/issues/` (for tracking, not so
 
 ---
 
+## Phase 1.5 — New Phase Gate（Phase N+1 必过）
+
+**When:** User asks for Phase 5+ / `parseN` / new roadmap after prior phase complete.
+
+**Order is mandatory:**
+
+1. **PRD delta first** — update `docs/prd/00-macro-shared.md`, `docs/prd/README.md`, and every affected `docs/prd/modules/M*.md`:
+   - New scope in §2.1 boundary table
+   - Interface contracts (paths, async, entities)
+   - **实现状态** rows marked `📋 计划` (not ✅ until code lands)
+   - Revision record bumped
+2. **Plan second** — append `specs/implementation-plans/active-plan.md` §Phase N from PRD (not from code exploration)
+3. **Confirm third** — present PRD diff summary; **wait for user approval** before any implementation
+4. **Build fourth** — `continue` / loop as usual; after each task, flip PRD 实现状态 ✅ where applicable
+
+**Resume / `continue all` on a new phase without step 1–3:** **STOP** and say: 「请先完成 PRD 增量与用户确认，再实现。」
+
+See also: `docs/prd/README.md` §新阶段扩展流程.
+
+---
+
 ## Phase 3 — Autonomous Build Loop
 
 ```mermaid
@@ -166,11 +187,20 @@ New chat after handoff:
 
 Agent reads `active-plan.md`, `.ralph-logs/session.log`, handoff doc, continues from first `[ ]`.
 
+**New phase** (first unchecked block is Phase N where PRD has no matching §):
+
+```
+/prd-build-loop parseN
+```
+
+→ Run **Phase 1.5** (PRD delta → plan → user confirm) **before** marking tasks or writing code.
+
 ---
 
 ## Anti-patterns
 
 - ❌ Implement without finalized PRD
+- ❌ **Start a new Phase (N+1) in code before PRD + active-plan are updated and user confirmed** (Phase 5 lesson)
 - ❌ Skip checkboxes / work off memory
 - ❌ Multiple tasks in one iteration without marking each
 - ❌ Read entire `docs/prd/` every iteration (read one module PRD only)

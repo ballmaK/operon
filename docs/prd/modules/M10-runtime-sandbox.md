@@ -9,7 +9,7 @@
 
 | 模块编号 | M10 |
 | 模块名称 | 运行时沙箱 |
-| 版本 | v0.2 |
+| 版本 | v0.3 |
 | 优先级 | P0 |
 
 ---
@@ -144,4 +144,18 @@ interface InvokeRequest {
 | ---- | ---- |
 | E-SB-01 | Playwright 浏览器未安装 | 引导一键安装 |
 | E-SB-02 | Docker 未运行 | **阻断** Sidecar 启动；引导用户启动 Docker Desktop |
-| E-SB-03 | 技能审批被拒 | 返回 M07 failed |
+| E-SB-03 | 技能审批被拒 | 返回 403 + `approvalId`；M07 failed |
+
+---
+
+## 实现状态（Phase 5）
+
+| 能力 | 状态 | 说明 |
+| ---- | ---- | ---- |
+| `browser_screenshot` Playwright | ✅ | `playwright-runner.ts`；optional 依赖 |
+| Playwright 不可用时 PNG stub | ✅ | `OPERON_PLAYWRIGHT_STUB=1` |
+| `code_run` Docker `node:20-alpine` | ✅ | `docker-runner.ts` |
+| Docker 不可用时 stdout stub | ✅ | `OPERON_DOCKER_STUB=1`（测试） |
+| 高风险 `code_run` 审批 gate（AU-01） | ✅ | `sandbox.ts` invoke 403 |
+| web_search / web_extract | ⏳ | 注册表有，invoke 501 |
+| SB-06 Chromium 自动下载 | ⏳ | 需用户/CI 安装 playwright 浏览器 |
